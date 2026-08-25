@@ -1,6 +1,6 @@
 # Camping Rental Web
 
-Frontend SPA (React + Vite + TypeScript) untuk layanan penyewaan alat camping, mengonsumsi [Camping Rental API](../camping-rental-api) (Laravel + Sanctum).
+Frontend SPA (React + Vite + TypeScript) untuk layanan penyewaan alat camping, mengonsumsi [Camping Rental API](../camping-rental-api) (Laravel + Sanctum). UI dibangun dengan **shadcn/ui + Tailwind CSS v4**, tema terracotta, mendukung **dark mode**.
 
 ## Fitur
 
@@ -9,19 +9,21 @@ Frontend SPA (React + Vite + TypeScript) untuk layanan penyewaan alat camping, m
 - **Detail alat** — cek ketersediaan stok per rentang tanggal sebelum booking
 - **Booking** — checkout satu langkah, riwayat booking, detail status dengan timeline
 - **Pembayaran manual** — laporan transfer/QRIS/tunai oleh pelanggan, verifikasi & penolakan oleh admin, polling status tiap 15 detik
-- **Panel admin** — CRUD kategori & alat, daftar semua booking, konfirmasi pengambilan/pengembalian (stok berkurang/tambah otomatis), verifikasi pembayaran
+- **Panel admin** — CRUD kategori & alat (dialog), konfirmasi pengambilan/pengembalian (stok otomatis), verifikasi pembayaran, notifikasi toast (sonner)
 
 ## Struktur
 
 ```
 src/
-  api/        # instance axios + fungsi per endpoint
-  pages/      # halaman sesuai rute (katalog, booking, admin)
-  components/ # Layout, guard rute, komponen UI bersama
-  hooks/      # useApiQuery, useAuth, useEquipmentAvailability
-  types/      # interface resource API (Equipment, Booking, Payment, ...)
-  context/    # AuthProvider
-  utils/      # format rupiah/tanggal, konstanta
+  api/              # instance axios + fungsi per endpoint
+  pages/            # halaman sesuai rute (katalog, booking, admin)
+  components/ui/    # komponen shadcn/ui (generate-an CLI)
+  components/shared/# komponen aplikasi (Field, EmptyState, badge status, dll)
+  hooks/            # useApiQuery, useAuth, useEquipmentAvailability
+  types/            # interface resource API
+  context/          # AuthProvider
+  utils/            # format rupiah/tanggal, konstanta
+  index.css         # token tema Tailwind v4 (terracotta light/dark)
 ```
 
 ## Menjalankan
@@ -40,6 +42,7 @@ Akun admin bawaan dari seeder: **admin@camping.test / password**
 ```bash
 npm run build   # typecheck + build produksi
 npm run lint    # eslint
+npx shadcn add <komponen>   # tambah komponen UI baru
 ```
 
 ## Catatan deployment

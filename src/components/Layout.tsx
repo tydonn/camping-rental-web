@@ -1,6 +1,20 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { PageLoader } from './ui'
+import { LogOutIcon, TentIcon, UserRoundIcon } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Toaster } from '@/components/ui/sonner'
+import { PageLoader } from '@/components/shared/page-loader'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const adminTabs = [
   { to: '/admin/equipment', label: 'Alat & Kategori' },
@@ -9,7 +23,19 @@ const adminTabs = [
 ]
 
 function navClass({ isActive }: { isActive: boolean }) {
-  return `nav-link${isActive ? ' active' : ''}`
+  return [
+    'rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors',
+    isActive
+      ? 'bg-primary/10 text-primary dark:bg-primary/15'
+      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  ].join(' ')
+}
+
+function tabClass({ isActive }: { isActive: boolean }) {
+  return [
+    'whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors',
+    isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+  ].join(' ')
 }
 
 export default function Layout() {
@@ -25,83 +51,109 @@ export default function Layout() {
   if (initializing) return <PageLoader label="Menyiapkan aplikasi..." />
 
   return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className="container header-inner">
-          <NavLink to="/katalog" className="brand">
-            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
-              <path
-                d="M12 4L2.5 20h19L12 4zm0 5.5L16.8 18H7.2L12 9.5zM11 12v6m2-6v6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.7"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Camping Rental
-          </NavLink>
-          <nav className="main-nav" aria-label="Navigasi utama">
-            <NavLink to="/katalog" className={navClass}>
-              Katalog
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
+          <div className="flex h-14 items-center gap-2 sm:gap-4">
+            <NavLink to="/katalog" className="flex shrink-0 items-center gap-2 font-extrabold tracking-tight text-foreground">
+              <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+                <TentIcon className="size-4.5" />
+              </span>
+              <span className="hidden min-[380px]:inline">Camping Rental</span>
             </NavLink>
-            {user && (
-              <NavLink to="/booking/riwayat" className={navClass} end>
-                Riwayat Booking
+
+            <nav className="flex flex-1 items-center gap-1 overflow-x-auto" aria-label="Navigasi utama">
+              <NavLink to="/katalog" className={navClass}>
+                Katalog
               </NavLink>
-            )}
-            {user?.role === 'admin' && (
-              <NavLink to={adminTabs[0].to} className={navClass} end>
-                Admin
-              </NavLink>
-            )}
-          </nav>
-          <div className="header-actions">
-            {user ? (
-              <>
-                <span className="user-chip" title={user.email}>
-                  <span className="user-avatar">{user.name.charAt(0).toUpperCase()}</span>
-                  <span className="user-name">{user.name}</span>
-                  {user.role === 'admin' && <span className="badge badge-info">Admin</span>}
-                </span>
-                <button type="button" className="btn btn-outline btn-sm" onClick={handleLogout}>
-                  Keluar
-                </button>
-              </>
-            ) : (
-              <>
-                <NavLink to="/login" className="btn btn-outline btn-sm">
-                  Masuk
+              {user && (
+                <NavLink to="/booking/riwayat" end className={navClass}>
+                  Riwayat Booking
                 </NavLink>
-                <NavLink to="/register" className="btn btn-primary btn-sm">
-                  Daftar
+              )}
+              {user?.role === 'admin' && (
+                <NavLink to={adminTabs[0].to} end className={navClass}>
+                  Admin
                 </NavLink>
-              </>
-            )}
+              )}
+            </nav>
+
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              <ThemeToggle />
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="gap-2 pl-1.5">
+                      <span className="grid size-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="hidden max-w-28 truncate text-sm font-semibold sm:inline">
+                        {user.name}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="flex flex-col">
+                      <span className="truncate">{user.name}</span>
+                      <span className="truncate text-xs font-normal text-muted-foreground">
+                        {user.email}
+                      </span>
+                    </DropdownMenuLabel>
+                    {user.role === 'admin' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                          <Badge variant="outline" className="border-sky-200 bg-sky-100/70 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300">
+                            Admin
+                          </Badge>
+                        </DropdownMenuLabel>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => void handleLogout()}>
+                      <LogOutIcon /> Keluar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <NavLink to="/login">Masuk</NavLink>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <NavLink to="/register">Daftar</NavLink>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        {user?.role === 'admin' && location.pathname.startsWith('/admin') && (
-          <div className="container">
-            <nav className="admin-tabs" aria-label="Navigasi admin">
+
+          {user?.role === 'admin' && location.pathname.startsWith('/admin') && (
+            <nav className="-mb-px flex items-center gap-1 overflow-x-auto pb-2" aria-label="Navigasi admin">
+              <UserRoundIcon className="mr-1 hidden size-4 text-muted-foreground sm:block" aria-hidden="true" />
               {adminTabs.map((tab) => (
-                <NavLink key={tab.to} to={tab.to} className={({ isActive }) => `tab-link${isActive ? ' active' : ''}`} end={tab.to === '/admin/equipment'}>
+                <NavLink key={tab.to} to={tab.to} end={tab.to === '/admin/equipment'} className={tabClass}>
                   {tab.label}
                 </NavLink>
               ))}
             </nav>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
-      <main className="container main-content">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-7 pb-16 sm:px-6">
         <Outlet />
       </main>
 
-      <footer className="site-footer">
-        <div className="container">
+      <footer className="border-t bg-card">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 text-sm text-muted-foreground sm:px-6">
           <p>Camping Rental &mdash; sewa alat camping dengan mudah.</p>
+          <Separator orientation="vertical" className="hidden h-4 sm:block" />
+          <p>&copy; {new Date().getFullYear()}</p>
         </div>
       </footer>
+
+      <Toaster position="top-center" richColors closeButton />
     </div>
   )
 }

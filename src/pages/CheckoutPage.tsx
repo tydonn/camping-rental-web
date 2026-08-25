@@ -1,13 +1,18 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { getEquipment } from '../api/catalog'
-import { createBooking } from '../api/bookings'
-import { firstFieldErrors, toApiError } from '../api/client'
-import { Alert, PageLoader } from '../components/ui'
-import { useApiQuery } from '../hooks/useApiQuery'
-import { formatIDR, inclusiveDays } from '../utils/format'
-import type { Equipment } from '../types'
+import { CircleAlertIcon, ShoppingCartIcon } from 'lucide-react'
+import { getEquipment } from '@/api/catalog'
+import { createBooking } from '@/api/bookings'
+import { firstFieldErrors, toApiError } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+import { PageLoader } from '@/components/shared/page-loader'
+import { EmptyState } from '@/components/shared/empty-state'
+import { useApiQuery } from '@/hooks/useApiQuery'
+import { formatIDR, inclusiveDays } from '@/utils/format'
+import type { Equipment as EquipmentType } from '@/types'
 
 interface CheckoutState {
   equipmentId: number
@@ -26,7 +31,7 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const equipmentId = state?.equipmentId ?? null
-  const detail = useApiQuery<Equipment | null>(
+  const detail = useApiQuery<EquipmentType | null>(
     async () => (equipmentId === null ? null : getEquipment(equipmentId)),
     [equipmentId],
   )
@@ -38,21 +43,22 @@ export default function CheckoutPage() {
 
   if (!state || !equipment) {
     return (
-      <div className="empty-state">
-        <h2>Data booking tidak lengkap</h2>
-        <p>Pilih alat dan rentang tanggal sewa terlebih dahulu dari halaman detail.</p>
-        <Link to="/katalog" className="btn btn-primary">
-          Ke Katalog
-        </Link>
-      </div>
+      <EmptyState
+        title="Data booking tidak lengkap"
+        description="Pilih alat dan rentang tanggal sewa terlebih dahulu dari halaman detail."
+        action={
+          <Button asChild className="mt-3">
+            <Link to="/katalog">Ke Katalog</Link>
+          </Button>
+        }
+      />
     )
   }
 
   const days = inclusiveDays(state.startDate, state.endDate)
   const total = Number(equipment.price_per_day) * state.quantity * days
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const submitBooking = async () => {
     setSubmitting(true)
     setError(null)
     setFieldErrors({})
@@ -72,64 +78,90 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="checkout-page">
-      <div className="page-heading">
-        <h1>Checkout Booking</h1>
-        <p className="muted">Periksa pesanan Anda sebelum membuat booking.</p>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold tracking-tight">Checkout Booking</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Periksa pesanan Anda sebelum membuat booking.
+        </p>
       </div>
 
-      {error && fieldErrors.items === undefined && <Alert kind="error">{error}</Alert>}
+      <div className="grid items-start gap-6 lg:grid-cols-[1fr_360px]">
+        <Card>
+          <CardContent className="space-y-4">
+            <h2 className="font-bold">Konfirmasi Booking</h2>
+            <p className="text-sm text-muted-foreground">
+              Setelah booking dibuat, Anda akan diarahkan ke halaman pembayaran untuk melaporkan
+              pembayaran dan menunggu verifikasi admin.
+            </p>
+            {(error || Object.keys(fieldErrors).length > 0) && (
+              <Alert variant="destructive">
+                <CircleAlertIcon />
+                <AlertDescription>{error ?? Object.values(fieldErrors)[0]}</AlertDescription>
+              </Alert>
+            )}
+            <Button
+              onClick={() => void submitBooking()}
+              className="w-full"
+              size="lg"
+              disabled={submitting || days === 0}
+            >
+              <ShoppingCartIcon data-icon="inline-start" />
+              {submitting ? 'Membuat booking...' : 'Buat Booking'}
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Total biaya dihitung otomatis oleh server berdasarkan harga per hari dan durasi sewa.
+            </p>
+          </CardContent>
+        </Card>
 
-      <div className="checkout-layout">
-        <form className="card checkout-form" onSubmit={handleSubmit}>
-          <h2>Konfirmasi Booking</h2>
-          <p className="muted">
-            Setelah booking dibuat, Anda akan diarahkan ke halaman pembayaran untuk melaporkan
-            pembayaran dan menunggu verifikasi admin.
-          </p>
-          {fieldErrors.start_date && <Alert kind="error">{fieldErrors.start_date}</Alert>}
-          {fieldErrors.end_date && <Alert kind="error">{fieldErrors.end_date}</Alert>}
-          {fieldErrors.items && <Alert kind="error">{fieldErrors.items}</Alert>}
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting || days === 0}>
-            {submitting ? 'Membuat booking...' : 'Buat Booking'}
-          </button>
-        </form>
-
-        <aside className="card order-summary">
-          <h2>Ringkasan Pesanan</h2>
-          <div className="summary-item">
-            <div>
-              <strong>{equipment.name}</strong>
-              {equipment.category && (
-                <span className="chip">{equipment.category.name}</span>
-              )}
-              <p className="muted">
-                {formatIDR(equipment.price_per_day)} &times; {state.quantity} unit &times; {days} hari
-              </p>
-            </div>
-            <span>{formatIDR(total)}</span>
-          </div>
-          <dl className="availability-meta">
-            <div>
-              <dt>Tanggal mulai</dt>
-              <dd>{state.startDate}</dd>
-            </div>
-            <div>
-              <dt>Tanggal selesai</dt>
-              <dd>{state.endDate}</dd>
-            </div>
-            <div>
-              <dt>Durasi</dt>
-              <dd>{days} hari</dd>
-            </div>
-          </dl>
-          <div className="summary-total">
-            <strong>Total</strong>
-            <strong>{formatIDR(total)}</strong>
-          </div>
-          <Link to={`/katalog/${equipment.id}`} className="link-plain">
-            &larr; Ubah tanggal atau jumlah
-          </Link>
+        <aside>
+          <Card className="lg:sticky lg:top-20">
+            <CardContent className="space-y-4">
+              <h2 className="font-bold">Ringkasan Pesanan</h2>
+              <div className="flex justify-between gap-4">
+                <div>
+                  <strong className="leading-snug">{equipment.name}</strong>
+                  {equipment.category && (
+                    <span className="mt-1 block w-fit rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-secondary-foreground">
+                      {equipment.category.name}
+                    </span>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatIDR(equipment.price_per_day)} &times; {state.quantity} unit &times;{' '}
+                    {days} hari
+                  </p>
+                </div>
+                <span className="text-sm font-bold">{formatIDR(total)}</span>
+              </div>
+              <Separator />
+              <dl className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Tanggal mulai</dt>
+                  <dd className="font-semibold">{state.startDate}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Tanggal selesai</dt>
+                  <dd className="font-semibold">{state.endDate}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Durasi</dt>
+                  <dd className="font-semibold">{days} hari</dd>
+                </div>
+              </dl>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <span className="font-bold">Total</span>
+                <span className="text-lg font-extrabold text-primary">{formatIDR(total)}</span>
+              </div>
+              <Link
+                to={`/katalog/${equipment.id}`}
+                className="block text-sm font-semibold text-primary hover:underline"
+              >
+                &larr; Ubah tanggal atau jumlah
+              </Link>
+            </CardContent>
+          </Card>
         </aside>
       </div>
     </div>

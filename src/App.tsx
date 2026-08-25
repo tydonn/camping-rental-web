@@ -1,6 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, Link } from 'react-router-dom'
 import Layout from './components/Layout'
 import { RequireAuth, RequireRole } from './components/Guard'
+import { EmptyState } from './components/shared/empty-state'
+import { Button } from './components/ui/button'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CatalogPage from './pages/CatalogPage'
@@ -37,10 +39,15 @@ export default function App() {
         <Route
           path="*"
           element={
-            <div className="empty-state">
-              <h2>404</h2>
-              <p>Halaman tidak ditemukan.</p>
-            </div>
+            <EmptyState
+              title="404"
+              description="Halaman tidak ditemukan."
+              action={
+                <Button asChild className="mt-3">
+                  <Link to="/katalog">Ke Katalog</Link>
+                </Button>
+              }
+            />
           }
         />
       </Route>

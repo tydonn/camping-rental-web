@@ -1,9 +1,21 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { firstFieldErrors, toApiError } from '../api/client'
-import { Alert, Field } from '../components/ui'
+import { TentIcon } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { firstFieldErrors, toApiError } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Field } from '@/components/shared/form-field'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -15,7 +27,7 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
 
   function update(field: keyof typeof form) {
-    return (event: React.ChangeEvent<HTMLInputElement>) => {
+    return (event: ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }))
     }
   }
@@ -43,72 +55,89 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="card auth-card">
-        <h1>Daftar</h1>
-        <p className="muted">Buat akun pelanggan untuk mulai menyewa alat.</p>
+    <div className="flex justify-center py-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="items-center text-center">
+          <span className="mx-auto mb-1 grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
+            <TentIcon className="size-5.5" />
+          </span>
+          <CardTitle className="text-xl">Buat Akun Baru</CardTitle>
+          <CardDescription>Daftar sebagai pelanggan untuk mulai menyewa alat.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {formError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
 
-        {formError && <Alert kind="error">{formError}</Alert>}
-
-        <form onSubmit={handleSubmit} noValidate>
-          <Field label="Nama Lengkap" htmlFor="name" error={errors.name}>
-            <input
-              id="name"
-              className="input"
-              type="text"
-              autoComplete="name"
-              value={form.name}
-              onChange={update('name')}
-              required
-            />
-          </Field>
-          <Field label="Email" htmlFor="email" error={errors.email}>
-            <input
-              id="email"
-              className="input"
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={update('email')}
-              required
-            />
-          </Field>
-          <Field label="Password" htmlFor="password" error={errors.password} hint="Minimal 8 karakter.">
-            <input
-              id="password"
-              className="input"
-              type="password"
-              autoComplete="new-password"
-              value={form.password}
-              onChange={update('password')}
-              required
-              minLength={8}
-            />
-          </Field>
-          <Field
-            label="Konfirmasi Password"
-            htmlFor="password_confirmation"
-            error={errors.password_confirmation}
-          >
-            <input
-              id="password_confirmation"
-              className="input"
-              type="password"
-              autoComplete="new-password"
-              value={form.password_confirmation}
-              onChange={update('password_confirmation')}
-              required
-            />
-          </Field>
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Memproses...' : 'Daftar'}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          Sudah punya akun? <Link to="/login">Masuk di sini</Link>
-        </p>
-      </div>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <Field label="Nama Lengkap" htmlFor="name" error={errors.name}>
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                placeholder="Nama Anda"
+                value={form.name}
+                onChange={update('name')}
+                required
+              />
+            </Field>
+            <Field label="Email" htmlFor="email" error={errors.email}>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="nama@email.com"
+                value={form.email}
+                onChange={update('email')}
+                required
+              />
+            </Field>
+            <Field
+              label="Password"
+              htmlFor="password"
+              error={errors.password}
+              hint="Minimal 8 karakter."
+            >
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                value={form.password}
+                onChange={update('password')}
+                required
+                minLength={8}
+              />
+            </Field>
+            <Field
+              label="Konfirmasi Password"
+              htmlFor="password_confirmation"
+              error={errors.password_confirmation}
+            >
+              <Input
+                id="password_confirmation"
+                type="password"
+                autoComplete="new-password"
+                value={form.password_confirmation}
+                onChange={update('password_confirmation')}
+                required
+              />
+            </Field>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Memproses...' : 'Daftar'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            Sudah punya akun?{' '}
+            <Link to="/login" className="font-semibold text-primary hover:underline">
+              Masuk di sini
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

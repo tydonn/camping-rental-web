@@ -1,6 +1,9 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { PageLoader } from './ui'
+import { useAuth } from '@/hooks/useAuth'
+import { EmptyState } from '@/components/shared/empty-state'
+import { Button } from '@/components/ui/button'
+import { Link } from 'react-router-dom'
+import { PageLoader } from '@/components/shared/page-loader'
 
 export function RequireAuth() {
   const { user, initializing } = useAuth()
@@ -23,10 +26,15 @@ export function RequireRole({ role }: { role: 'admin' }) {
   }
   if (user.role !== role) {
     return (
-      <div className="empty-state">
-        <h2>Akses ditolak</h2>
-        <p>Halaman ini hanya dapat diakses oleh admin.</p>
-      </div>
+      <EmptyState
+        title="Akses ditolak"
+        description="Halaman ini hanya dapat diakses oleh admin."
+        action={
+          <Button asChild className="mt-3">
+            <Link to="/katalog">Kembali ke katalog</Link>
+          </Button>
+        }
+      />
     )
   }
   return <Outlet />

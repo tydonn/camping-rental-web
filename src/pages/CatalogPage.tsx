@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react'
-import type { ChangeEvent } from 'react'
-import { listCategoriesForFilter, listEquipment } from '../api/catalog'
-import EquipmentCard from '../components/EquipmentCard'
-import { Alert, EmptyState, Field, PageLoader, Pagination } from '../components/ui'
-import { useApiQuery } from '../hooks/useApiQuery'
-import type { Category, Equipment, Paginated, SortDirection, EquipmentSortField } from '../types'
+import { listCategoriesForFilter, listEquipment } from '@/api/catalog'
+import EquipmentCard from '@/components/EquipmentCard'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Field } from '@/components/shared/form-field'
+import { SkeletonGrid } from '@/components/shared/page-loader'
+import { EmptyState } from '@/components/shared/empty-state'
+import { DataPagination } from '@/components/shared/data-pagination'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { useApiQuery } from '@/hooks/useApiQuery'
+import type { Category, Equipment, EquipmentSortField, Paginated, SortDirection } from '@/types'
+import { CircleAlertIcon } from 'lucide-react'
 
 const sortOptions: { value: `${EquipmentSortField}:${SortDirection}`; label: string }[] = [
   { value: 'name:asc', label: 'Nama (A-Z)' },
@@ -16,7 +30,7 @@ const sortOptions: { value: `${EquipmentSortField}:${SortDirection}`; label: str
 export default function CatalogPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
-  const [categoryId, setCategoryId] = useState<number | ''>('')
+  const [categoryId, setCategoryId] = useState<string>('all')
   const [availableOnly, setAvailableOnly] = useState(false)
   const [sortValue, setSortValue] = useState<`${EquipmentSortField}:${SortDirection}`>('name:asc')
   const [page, setPage] = useState(1)
@@ -27,7 +41,7 @@ export default function CatalogPage() {
     () =>
       listEquipment({
         search: search || undefined,
-        category_id: categoryId === '' ? undefined : categoryId,
+        category_id: categoryId === 'all' ? undefined : Number(categoryId),
         available_only: availableOnly || undefined,
         sort_by: sortField,
         sort_dir: sortDir,
@@ -53,80 +67,94 @@ export default function CatalogPage() {
   const items = catalog.data?.data ?? []
   const lastPage = catalog.data?.meta.last_page ?? 1
 
-  function handleCategoryChange(event: ChangeEvent<HTMLSelectElement>) {
-    setCategoryId(event.target.value === '' ? '' : Number(event.target.value))
-    setPage(1)
-  }
-
   return (
     <div>
-      <div className="page-heading">
-        <h1>Katalog Alat Camping</h1>
-        <p className="muted">Temukan tenda, carrier, dan perlengkapan outdoor lainnya.</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold tracking-tight">Katalog Alat Camping</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Temukan tenda, carrier, dan perlengkapan outdoor lainnya.
+        </p>
       </div>
 
-      <div className="catalog-layout">
-        <aside className="card filter-panel">
-          <h2>Filter</h2>
-          <Field label="Cari alat" htmlFor="catalog-search">
-            <input
-              id="catalog-search"
-              className="input"
-              type="search"
-              placeholder="mis. tenda, carrier..."
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-            />
-          </Field>
-          <Field label="Kategori" htmlFor="catalog-category">
-            <select
-              id="catalog-category"
-              className="input"
-              value={categoryId === '' ? '' : String(categoryId)}
-              onChange={handleCategoryChange}
-            >
-              <option value="">Semua kategori</option>
-              {(categoriesQuery.data ?? []).map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Urutkan" htmlFor="catalog-sort">
-            <select
-              id="catalog-sort"
-              className="input"
-              value={sortValue}
-              onChange={(event) => {
-                setSortValue(event.target.value as typeof sortValue)
-                setPage(1)
-              }}
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={availableOnly}
-              onChange={(event) => {
-                setAvailableOnly(event.target.checked)
-                setPage(1)
-              }}
-            />
-            Hanya tampilkan alat dengan stok
-          </label>
+      <div className="grid items-start gap-5 lg:grid-cols-[250px_1fr]">
+        <aside className="rounded-xl border bg-card p-4 lg:sticky lg:top-20" aria-label="Filter katalog">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">
+            Filter
+          </h2>
+          <div className="space-y-4">
+            <Field label="Cari alat" htmlFor="catalog-search">
+              <Input
+                id="catalog-search"
+                type="search"
+                placeholder="mis. tenda, carrier..."
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+              />
+            </Field>
+            <Field label="Kategori" htmlFor="catalog-category">
+              <Select
+                value={categoryId}
+                onValueChange={(value) => {
+                  setCategoryId(value)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger id="catalog-category" className="w-full">
+                  <SelectValue placeholder="Semua kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua kategori</SelectItem>
+                  {(categoriesQuery.data ?? []).map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Urutkan" htmlFor="catalog-sort">
+              <Select
+                value={sortValue}
+                onValueChange={(value) => {
+                  setSortValue(value as typeof sortValue)
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger id="catalog-sort" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
+              <Checkbox
+                checked={availableOnly}
+                onCheckedChange={(checked) => {
+                  setAvailableOnly(checked === true)
+                  setPage(1)
+                }}
+              />
+              Hanya alat dengan stok
+            </Label>
+          </div>
         </aside>
 
         <section aria-label="Daftar alat">
-          {catalog.error && <Alert kind="error">{catalog.error}</Alert>}
+          {catalog.error && (
+            <Alert variant="destructive" className="mb-4">
+              <CircleAlertIcon />
+              <AlertTitle>Gagal memuat</AlertTitle>
+              <AlertDescription>{catalog.error}</AlertDescription>
+            </Alert>
+          )}
           {catalog.loadingFirst ? (
-            <PageLoader label="Memuat katalog..." />
+            <SkeletonGrid count={8} />
           ) : !catalog.error && items.length === 0 ? (
             <EmptyState
               title="Alat tidak ditemukan"
@@ -134,12 +162,12 @@ export default function CatalogPage() {
             />
           ) : (
             <>
-              <div className="equipment-grid">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((item) => (
                   <EquipmentCard key={item.id} equipment={item} />
                 ))}
               </div>
-              <Pagination page={page} lastPage={lastPage} onChange={setPage} />
+              <DataPagination page={page} lastPage={lastPage} onChange={setPage} />
             </>
           )}
         </section>

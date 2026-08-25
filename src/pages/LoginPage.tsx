@@ -1,9 +1,21 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { firstFieldErrors } from '../api/client'
-import { Alert, Field } from '../components/ui'
+import { TentIcon } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { firstFieldErrors } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Field } from '@/components/shared/form-field'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -26,8 +38,9 @@ export default function LoginPage() {
       const user = await login(email.trim(), password)
       navigate(from ?? (user.role === 'admin' ? '/admin/bookings' : '/katalog'), { replace: true })
     } catch (error) {
-      setErrors(firstFieldErrors(error))
-      if (!Object.keys(firstFieldErrors(error)).length && error instanceof Error) {
+      const fieldMap = firstFieldErrors(error)
+      setErrors(fieldMap)
+      if (!Object.keys(fieldMap).length && error instanceof Error) {
         setFormError(error.message)
       }
       setSubmitting(false)
@@ -35,48 +48,63 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="card auth-card">
-        <h1>Masuk</h1>
-        <p className="muted">Masuk untuk menyewa alat camping favoritmu.</p>
+    <div className="flex justify-center py-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="items-center text-center">
+          <span className="mx-auto mb-1 grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
+            <TentIcon className="size-5.5" />
+          </span>
+          <CardTitle className="text-xl">Masuk ke Camping Rental</CardTitle>
+          <CardDescription>Masuk untuk menyewa alat camping favoritmu.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {from && (
+            <Alert variant="info" className="mb-4">
+              <AlertDescription>Silakan masuk terlebih dahulu untuk melanjutkan.</AlertDescription>
+            </Alert>
+          )}
+          {formError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
 
-        {from && (
-          <Alert kind="info">Silakan masuk terlebih dahulu untuk melanjutkan.</Alert>
-        )}
-        {formError && <Alert kind="error">{formError}</Alert>}
-
-        <form onSubmit={handleSubmit} noValidate>
-          <Field label="Email" htmlFor="email" error={errors.email}>
-            <input
-              id="email"
-              className="input"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </Field>
-          <Field label="Password" htmlFor="password" error={errors.password}>
-            <input
-              id="password"
-              className="input"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </Field>
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Memproses...' : 'Masuk'}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          Belum punya akun? <Link to="/register">Daftar sekarang</Link>
-        </p>
-      </div>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <Field label="Email" htmlFor="email" error={errors.email}>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="nama@email.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Password" htmlFor="password" error={errors.password}>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </Field>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? 'Memproses...' : 'Masuk'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            Belum punya akun?{' '}
+            <Link to="/register" className="font-semibold text-primary hover:underline">
+              Daftar sekarang
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

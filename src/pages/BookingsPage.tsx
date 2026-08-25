@@ -1,10 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listMyBookings } from '../api/bookings'
-import { Alert, BookingBadge, EmptyState, PageLoader, Pagination } from '../components/ui'
-import { useApiQuery } from '../hooks/useApiQuery'
-import { formatIDR, formatRange } from '../utils/format'
-import type { Booking, BookingStatus, Paginated } from '../types'
+import { listMyBookings } from '@/api/bookings'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { BookingBadge } from '@/components/shared/status-badges'
+import { EmptyState } from '@/components/shared/empty-state'
+import { DataPagination } from '@/components/shared/data-pagination'
+import { SkeletonRow } from '@/components/shared/page-loader'
+import { useApiQuery } from '@/hooks/useApiQuery'
+import { formatIDR, formatRange } from '@/utils/format'
+import type { Booking, BookingStatus, Paginated } from '@/types'
+import { CircleAlertIcon } from 'lucide-react'
 
 const statusFilters: { value: BookingStatus | ''; label: string }[] = [
   { value: '', label: 'Semua' },
@@ -30,57 +36,75 @@ export default function BookingsPage() {
 
   return (
     <div>
-      <div className="page-heading">
-        <h1>Riwayat Booking</h1>
-        <p className="muted">Semua booking yang pernah Anda buat beserta statusnya.</p>
+      <div className="mb-5">
+        <h1 className="text-2xl font-extrabold tracking-tight">Riwayat Booking</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Semua booking yang pernah Anda buat beserta statusnya.
+        </p>
       </div>
 
-      <div className="chip-filter" role="group" aria-label="Filter status booking">
+      <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter status booking">
         {statusFilters.map((filter) => (
-          <button
+          <Button
             key={filter.value}
-            type="button"
-            className={`btn btn-sm ${statusFilter === filter.value ? 'btn-primary' : 'btn-outline'}`}
+            size="sm"
+            variant={statusFilter === filter.value ? 'default' : 'outline'}
             onClick={() => setStatusFilter(filter.value)}
           >
             {filter.label}
-          </button>
+          </Button>
         ))}
       </div>
 
-      {bookingsQuery.error && <Alert kind="error">{bookingsQuery.error}</Alert>}
+      {bookingsQuery.error && (
+        <Alert variant="destructive" className="mb-4">
+          <CircleAlertIcon />
+          <AlertDescription>{bookingsQuery.error}</AlertDescription>
+        </Alert>
+      )}
 
       {bookingsQuery.loadingFirst ? (
-        <PageLoader label="Memuat riwayat booking..." />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <SkeletonRow key={index} />
+          ))}
+        </div>
       ) : !bookingsQuery.error && visible.length === 0 ? (
         <EmptyState
           title={statusFilter === '' ? 'Belum ada booking' : 'Tidak ada booking dengan status ini'}
           description="Jelajahi katalog dan buat booking pertama Anda."
           action={
-            <Link to="/katalog" className="btn btn-primary">
-              Lihat Katalog
-            </Link>
+            <Button asChild className="mt-3">
+              <Link to="/katalog">Lihat Katalog</Link>
+            </Button>
           }
         />
       ) : (
         <>
-          <ul className="booking-list">
+          <ul className="space-y-3">
             {visible.map((booking) => {
               const firstItem = booking.items[0]
               return (
                 <li key={booking.id}>
-                  <Link to={`/booking/riwayat/${booking.id}`} className="card booking-row">
-                    <div className="booking-row-main">
-                      <span className="booking-id">Booking #{booking.id}</span>
-                      <strong>{formatRange(booking.start_date, booking.end_date)}</strong>
-                      <span className="muted">
+                  <Link
+                    to={`/booking/riwayat/${booking.id}`}
+                    className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="space-y-0.5">
+                      <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+                        Booking #{booking.id}
+                      </span>
+                      <p className="font-semibold">{formatRange(booking.start_date, booking.end_date)}</p>
+                      <p className="truncate text-sm text-muted-foreground">
                         {firstItem
                           ? `${firstItem.equipment?.name ?? 'Alat'}${booking.items.length > 1 ? ` +${booking.items.length - 1} alat lain` : ''}`
                           : '-'}
-                      </span>
+                      </p>
                     </div>
-                    <div className="booking-row-side">
-                      <span className="booking-total">{formatIDR(booking.total_amount)}</span>
+                    <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
+                      <span className="font-extrabold text-primary">
+                        {formatIDR(booking.total_amount)}
+                      </span>
                       <BookingBadge status={booking.status} />
                     </div>
                   </Link>
@@ -88,7 +112,7 @@ export default function BookingsPage() {
               )
             })}
           </ul>
-          <Pagination page={page} lastPage={lastPage} onChange={setPage} />
+          <DataPagination page={page} lastPage={lastPage} onChange={setPage} />
         </>
       )}
     </div>

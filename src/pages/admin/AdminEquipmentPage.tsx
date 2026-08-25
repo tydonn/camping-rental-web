@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
+  CheckIcon,
+  CircleAlertIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import {
   createCategory,
   createEquipment,
   deleteCategory,
@@ -8,13 +16,46 @@ import {
   listCategories,
   updateCategory,
   updateEquipment,
-} from '../../api/admin'
-import { listEquipment } from '../../api/catalog'
-import { firstFieldErrors, toApiError } from '../../api/client'
-import { Alert, EmptyState, Field, Modal, PageLoader, Pagination } from '../../components/ui'
-import { useApiQuery } from '../../hooks/useApiQuery'
-import type { Category, Equipment, Paginated } from '../../types'
-import { formatIDR } from '../../utils/format'
+} from '@/api/admin'
+import { listEquipment } from '@/api/catalog'
+import { firstFieldErrors, toApiError } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Field } from '@/components/shared/form-field'
+import { EmptyState } from '@/components/shared/empty-state'
+import { DataPagination } from '@/components/shared/data-pagination'
+import { PageLoader } from '@/components/shared/page-loader'
+import { useApiQuery } from '@/hooks/useApiQuery'
+import type { Category, Equipment as EquipmentType, Paginated } from '@/types'
+import { formatIDR } from '@/utils/format'
 
 interface EquipmentFormState {
   category_id: string
@@ -34,12 +75,18 @@ const emptyForm: EquipmentFormState = {
   photo: '',
 }
 
+interface DeleteTarget {
+  kind: 'category' | 'equipment'
+  id: number
+  name: string
+}
+
 export default function AdminEquipmentPage() {
   const [page, setPage] = useState(1)
   const [tick, setTick] = useState(0)
 
   const categoriesQuery = useApiQuery<Category[]>(() => listCategories(), [])
-  const equipmentQuery = useApiQuery<Paginated<Equipment>>(
+  const equipmentQuery = useApiQuery<Paginated<EquipmentType>>(
     () => listEquipment({ page, per_page: 12 }),
     [page, tick],
   )
@@ -49,6 +96,8 @@ export default function AdminEquipmentPage() {
   const [editingCategoryName, setEditingCategoryName] = useState('')
   const [categoryBusy, setCategoryBusy] = useState(false)
   const [categoryError, setCategoryError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -56,10 +105,14 @@ export default function AdminEquipmentPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [modalError, setModalError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [equipmentError, setEquipmentError] = useState<string | null>(null)
 
   const categories = categoriesQuery.data ?? []
   const items = equipmentQuery.data?.data ?? []
+
+  const refreshAll = () => {
+    categoriesQuery.reload()
+    setTick((value) => value + 1)
+  }
 
   const handleAddCategory = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -68,6 +121,7 @@ export default function AdminEquipmentPage() {
     setCategoryError(null)
     try {
       await createCategory(newCategoryName.trim())
+      toast.success(`Kategori "${newCategoryName.trim()}" ditambahkan.`)
       setNewCategoryName('')
       categoriesQuery.reload()
     } catch (error) {
@@ -84,9 +138,9 @@ export default function AdminEquipmentPage() {
     setCategoryError(null)
     try {
       await updateCategory(editingCategoryId, editingCategoryName.trim())
+      toast.success('Kategori diperbarui.')
       setEditingCategoryId(null)
-      categoriesQuery.reload()
-      setTick((value) => value + 1)
+      refreshAll()
     } catch (error) {
       setCategoryError(firstFieldErrors(error).name ?? toApiError(error).message)
     } finally {
@@ -94,18 +148,29 @@ export default function AdminEquipmentPage() {
     }
   }
 
-  const handleDeleteCategory = async (category: Category) => {
-    if (!window.confirm(`Hapus kategori "${category.name}"?`)) return
-    setCategoryBusy(true)
-    setCategoryError(null)
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
     try {
-      await deleteCategory(category.id)
-      categoriesQuery.reload()
-      setTick((value) => value + 1)
+      if (deleteTarget.kind === 'category') {
+        await deleteCategory(deleteTarget.id)
+        toast.success(`Kategori "${deleteTarget.name}" dihapus.`)
+        refreshAll()
+      } else {
+        await deleteEquipment(deleteTarget.id)
+        toast.success(`Alat "${deleteTarget.name}" dihapus.`)
+        setTick((value) => value + 1)
+      }
+      setDeleteTarget(null)
     } catch (error) {
-      setCategoryError(toApiError(error).message)
+      if (deleteTarget.kind === 'category') {
+        setCategoryError(toApiError(error).message)
+      } else {
+        toast.error(toApiError(error).message)
+      }
+      setDeleteTarget(null)
     } finally {
-      setCategoryBusy(false)
+      setDeleting(false)
     }
   }
 
@@ -120,7 +185,7 @@ export default function AdminEquipmentPage() {
     setModalOpen(true)
   }
 
-  function openEditModal(equipment: Equipment) {
+  function openEditModal(equipment: EquipmentType) {
     setEditingId(equipment.id)
     setForm({
       category_id: equipment.category ? String(equipment.category.id) : '',
@@ -151,13 +216,14 @@ export default function AdminEquipmentPage() {
     try {
       if (editingId === null) {
         await createEquipment(payload)
+        toast.success(`Alat "${payload.name}" ditambahkan.`)
       } else {
         await updateEquipment(editingId, payload)
+        toast.success(`Alat "${payload.name}" diperbarui.`)
       }
       setModalOpen(false)
       setPage(1)
-      setTick((value) => value + 1)
-      categoriesQuery.reload()
+      refreshAll()
     } catch (error) {
       const mapped = firstFieldErrors(error)
       setFormErrors(mapped)
@@ -167,167 +233,180 @@ export default function AdminEquipmentPage() {
     }
   }
 
-  const handleDeleteEquipment = async (equipment: Equipment) => {
-    if (!window.confirm(`Hapus alat "${equipment.name}"?`)) return
-    setEquipmentError(null)
-    try {
-      await deleteEquipment(equipment.id)
-      setTick((value) => value + 1)
-    } catch (error) {
-      setEquipmentError(toApiError(error).message)
-    }
-  }
-
   return (
     <div>
-      <div className="page-heading">
-        <h1>Kelola Alat &amp; Kategori</h1>
-        <p className="muted">Tambahkan, ubah, dan hapus kategori serta alat sewa.</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold tracking-tight">Kelola Alat &amp; Kategori</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Tambahkan, ubah, dan hapus kategori serta alat sewa.
+        </p>
       </div>
 
-      <div className="admin-layout">
-        <section className="card category-panel" aria-label="Kelola kategori">
-          <h2>Kategori</h2>
-          {categoryError && <Alert kind="error">{categoryError}</Alert>}
+      <div className="grid items-start gap-5 lg:grid-cols-[300px_1fr]">
+        <section aria-label="Kelola kategori">
+          <Card>
+            <CardContent className="space-y-3">
+              <h2 className="text-sm font-bold tracking-wide text-muted-foreground uppercase">
+                Kategori
+              </h2>
+              {categoryError && (
+                <Alert variant="destructive">
+                  <CircleAlertIcon />
+                  <AlertDescription>{categoryError}</AlertDescription>
+                </Alert>
+              )}
 
-          <ul className="category-list">
-            {categories.map((category) =>
-              editingCategoryId === category.id ? (
-                <li key={category.id}>
-                  <form className="inline-form" onSubmit={handleRenameCategory}>
-                    <input
-                      className="input"
-                      value={editingCategoryName}
-                      onChange={(event) => setEditingCategoryName(event.target.value)}
-                      required
-                      autoFocus
-                    />
-                    <button type="submit" className="btn btn-primary btn-sm" disabled={categoryBusy}>
-                      Simpan
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => setEditingCategoryId(null)}
-                    >
-                      Batal
-                    </button>
-                  </form>
-                </li>
-              ) : (
-                <li key={category.id} className="category-row">
-                  <span>{category.name}</span>
-                  <span className="muted">{category.equipment_count ?? 0} alat</span>
-                  <span className="category-actions">
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => {
-                        setEditingCategoryId(category.id)
-                        setEditingCategoryName(category.name)
-                      }}
-                    >
-                      Ubah
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger-outline btn-sm"
-                      disabled={categoryBusy}
-                      onClick={() => void handleDeleteCategory(category)}
-                    >
-                      Hapus
-                    </button>
-                  </span>
-                </li>
-              ),
-            )}
-            {categories.length === 0 && !categoriesQuery.loadingFirst && (
-              <li className="muted">Belum ada kategori.</li>
-            )}
-          </ul>
+              <ul className="divide-y rounded-lg border">
+                {categories.map((category) =>
+                  editingCategoryId === category.id ? (
+                    <li key={category.id} className="p-2">
+                      <form className="flex gap-1.5" onSubmit={handleRenameCategory}>
+                        <Input
+                          value={editingCategoryName}
+                          onChange={(event) => setEditingCategoryName(event.target.value)}
+                          required
+                          autoFocus
+                        />
+                        <Button type="submit" size="icon-sm" disabled={categoryBusy} aria-label="Simpan">
+                          <CheckIcon />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => setEditingCategoryId(null)}
+                          aria-label="Batal"
+                        >
+                          &times;
+                        </Button>
+                      </form>
+                    </li>
+                  ) : (
+                    <li key={category.id} className="group flex items-center gap-2 px-3 py-2 text-sm">
+                      <span className="flex-1 font-semibold">{category.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {category.equipment_count ?? 0} alat
+                      </span>
+                      <span className="flex gap-1 opacity-60 transition-opacity group-hover:opacity-100">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Ubah ${category.name}`}
+                          onClick={() => {
+                            setEditingCategoryId(category.id)
+                            setEditingCategoryName(category.name)
+                          }}
+                        >
+                          <PencilIcon />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="text-destructive hover:text-destructive"
+                          disabled={categoryBusy}
+                          aria-label={`Hapus ${category.name}`}
+                          onClick={() =>
+                            setDeleteTarget({ kind: 'category', id: category.id, name: category.name })
+                          }
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </span>
+                    </li>
+                  ),
+                )}
+                {categories.length === 0 && !categoriesQuery.loadingFirst && (
+                  <li className="px-3 py-4 text-center text-sm text-muted-foreground">
+                    Belum ada kategori.
+                  </li>
+                )}
+              </ul>
 
-          <form className="inline-form" onSubmit={handleAddCategory}>
-            <input
-              className="input"
-              placeholder="Nama kategori baru"
-              value={newCategoryName}
-              onChange={(event) => setNewCategoryName(event.target.value)}
-              aria-label="Nama kategori baru"
-              required
-            />
-            <button type="submit" className="btn btn-primary" disabled={categoryBusy}>
-              Tambah
-            </button>
-          </form>
+              <form className="flex gap-1.5" onSubmit={handleAddCategory}>
+                <Input
+                  placeholder="Kategori baru"
+                  value={newCategoryName}
+                  onChange={(event) => setNewCategoryName(event.target.value)}
+                  aria-label="Nama kategori baru"
+                  required
+                />
+                <Button type="submit" size="sm" disabled={categoryBusy}>
+                  <PlusIcon data-icon="inline-start" /> Tambah
+                </Button>
+              </form>
 
-          <h2 className="section-gap">Ringkasan Katalog</h2>
-          <p className="muted">
-            {equipmentQuery.data?.meta.total ?? 0} alat terdaftar. Kelola daftar alat pada panel di
-            samping.
-          </p>
+              <p className="pt-1 text-xs text-muted-foreground">
+                {equipmentQuery.data?.meta.total ?? 0} alat terdaftar dalam katalog.
+              </p>
+            </CardContent>
+          </Card>
         </section>
 
         <section aria-label="Daftar alat">
-          <div className="toolbar">
-            <h2>Daftar Alat</h2>
-            <button type="button" className="btn btn-primary" onClick={openCreateModal}>
-              Tambah Alat
-            </button>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-bold">Daftar Alat</h2>
+            <Button size="sm" onClick={openCreateModal}>
+              <PlusIcon data-icon="inline-start" /> Tambah Alat
+            </Button>
           </div>
-
-          {equipmentError && <Alert kind="error">{equipmentError}</Alert>}
-          {equipmentQuery.error && <Alert kind="error">{equipmentQuery.error}</Alert>}
 
           {equipmentQuery.loadingFirst ? (
             <PageLoader label="Memuat daftar alat..." />
-          ) : !equipmentQuery.error && items.length === 0 ? (
+          ) : equipmentQuery.error ? (
+            <Alert variant="destructive">
+              <CircleAlertIcon />
+              <AlertDescription>{equipmentQuery.error}</AlertDescription>
+            </Alert>
+          ) : items.length === 0 ? (
             <EmptyState title="Belum ada alat" description="Tambahkan alat pertama Anda." />
           ) : (
             <>
-              <div className="table-responsive">
-                <table className="table card-table">
+              <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+                <table className="w-full min-w-[640px] text-sm">
                   <thead>
-                    <tr>
-                      <th scope="col">Alat</th>
-                      <th scope="col">Kategori</th>
-                      <th scope="col">Harga/hari</th>
-                      <th scope="col">Stok</th>
-                      <th scope="col" className="text-right">
-                        Aksi
-                      </th>
+                    <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                      <th scope="col" className="px-4 py-2.5 font-semibold">Alat</th>
+                      <th scope="col" className="px-4 py-2.5 font-semibold">Kategori</th>
+                      <th scope="col" className="px-4 py-2.5 font-semibold">Harga/hari</th>
+                      <th scope="col" className="px-4 py-2.5 font-semibold">Stok</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-semibold">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {items.map((equipment) => (
-                      <tr key={equipment.id}>
-                        <td data-label="Alat">
-                          <strong>{equipment.name}</strong>
+                      <tr key={equipment.id} className="transition-colors hover:bg-muted/40">
+                        <td className="px-4 py-2.5 font-semibold">{equipment.name}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground">
+                          {equipment.category?.name ?? '-'}
                         </td>
-                        <td data-label="Kategori">{equipment.category?.name ?? '-'}</td>
-                        <td data-label="Harga/hari">{formatIDR(equipment.price_per_day)}</td>
-                        <td data-label="Stok">{equipment.stock}</td>
-                        <td className="text-right row-actions" data-label="Aksi">
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() => openEditModal(equipment)}
-                          >
-                            Ubah
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-danger-outline btn-sm"
-                            onClick={() => void handleDeleteEquipment(equipment)}
-                          >
-                            Hapus
-                          </button>
+                        <td className="px-4 py-2.5">{formatIDR(equipment.price_per_day)}</td>
+                        <td className="px-4 py-2.5">{equipment.stock}</td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex justify-end gap-1.5">
+                            <Button variant="outline" size="sm" onClick={() => openEditModal(equipment)}>
+                              Ubah
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() =>
+                                setDeleteTarget({
+                                  kind: 'equipment',
+                                  id: equipment.id,
+                                  name: equipment.name,
+                                })
+                              }
+                            >
+                              Hapus
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <Pagination
+              <DataPagination
                 page={page}
                 lastPage={equipmentQuery.data?.meta.last_page ?? 1}
                 onChange={setPage}
@@ -337,97 +416,127 @@ export default function AdminEquipmentPage() {
         </section>
       </div>
 
-      <Modal
-        open={modalOpen}
-        title={editingId === null ? 'Tambah Alat' : `Ubah Alat #${editingId}`}
-        onClose={() => setModalOpen(false)}
-      >
-        {modalError && <Alert kind="error">{modalError}</Alert>}
-        <form onSubmit={handleEquipmentSubmit}>
-          <Field label="Kategori" htmlFor="eq-category" error={formErrors.category_id}>
-            <select
-              id="eq-category"
-              className="input"
-              value={form.category_id}
-              onChange={(event) => setForm((prev) => ({ ...prev, category_id: event.target.value }))}
-              required
+      {/* Modal tambah/ubah alat */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingId === null ? 'Tambah Alat' : `Ubah Alat #${editingId}`}</DialogTitle>
+            <DialogDescription>
+              Isi detail alat yang akan disewakan kepada pelanggan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {modalError && (
+            <Alert variant="destructive">
+              <CircleAlertIcon />
+              <AlertDescription>{modalError}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleEquipmentSubmit} className="space-y-4">
+            <Field label="Kategori" error={formErrors.category_id}>
+              <Select
+                value={form.category_id}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, category_id: value }))}
+                required
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Nama alat" error={formErrors.name}>
+              <Input
+                value={form.name}
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                required
+                maxLength={255}
+              />
+            </Field>
+            <Field label="Deskripsi" error={formErrors.description}>
+              <Textarea
+                rows={3}
+                value={form.description}
+                onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              />
+            </Field>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Harga per hari (Rp)" error={formErrors.price_per_day}>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.price_per_day}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, price_per_day: event.target.value }))
+                  }
+                  required
+                />
+              </Field>
+              <Field label="Stok" error={formErrors.stock}>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.stock}
+                  onChange={(event) => setForm((prev) => ({ ...prev, stock: event.target.value }))}
+                  required
+                />
+              </Field>
+            </div>
+            <Field
+              label="Foto (path/URL, opsional)"
+              error={formErrors.photo}
+              hint="mis. equipment/tenda-dome.jpg atau URL lengkap."
             >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Nama alat" htmlFor="eq-name" error={formErrors.name}>
-            <input
-              id="eq-name"
-              className="input"
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              required
-              maxLength={255}
-            />
-          </Field>
-          <Field label="Deskripsi" htmlFor="eq-description" error={formErrors.description}>
-            <textarea
-              id="eq-description"
-              className="input"
-              rows={3}
-              value={form.description}
-              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            />
-          </Field>
-          <div className="field-grid">
-            <Field label="Harga per hari (Rp)" htmlFor="eq-price" error={formErrors.price_per_day}>
-              <input
-                id="eq-price"
-                className="input"
-                type="number"
-                min={0}
-                step="0.01"
-                value={form.price_per_day}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, price_per_day: event.target.value }))
-                }
-                required
+              <Input
+                value={form.photo}
+                onChange={(event) => setForm((prev) => ({ ...prev, photo: event.target.value }))}
               />
             </Field>
-            <Field label="Stok" htmlFor="eq-stock" error={formErrors.stock}>
-              <input
-                id="eq-stock"
-                className="input"
-                type="number"
-                min={0}
-                value={form.stock}
-                onChange={(event) => setForm((prev) => ({ ...prev, stock: event.target.value }))}
-                required
-              />
-            </Field>
-          </div>
-          <Field
-            label="Foto (path/URL, opsional)"
-            htmlFor="eq-photo"
-            error={formErrors.photo}
-            hint="mis. equipment/tenda-dome.jpg atau URL lengkap."
-          >
-            <input
-              id="eq-photo"
-              className="input"
-              value={form.photo}
-              onChange={(event) => setForm((prev) => ({ ...prev, photo: event.target.value }))}
-            />
-          </Field>
-          <div className="modal-actions">
-            <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>
-              Batal
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Menyimpan...' : 'Simpan'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Konfirmasi hapus */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus {deleteTarget?.kind === 'category' ? 'kategori' : 'alat'}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleteTarget?.name}" akan dihapus permanen. Alat dengan riwayat booking atau
+              kategori yang masih berisi alat tidak dapat dihapus oleh sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={(event) => {
+                event.preventDefault()
+                void confirmDelete()
+              }}
+            >
+              {deleting ? 'Menghapus...' : 'Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,20 +1,35 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { getBooking, reportPayment } from '../api/bookings'
-import { firstFieldErrors, toApiError } from '../api/client'
 import {
-  Alert,
-  BookingBadge,
-  Field,
-  PageLoader,
-  PaymentBadge,
-  Spinner,
-} from '../components/ui'
-import { useApiQuery } from '../hooks/useApiQuery'
-import type { Booking, Payment, PaymentMethod } from '../types'
-import { formatDateTime, formatIDR, formatRange } from '../utils/format'
-import { paymentMethodLabels } from '../utils/constants'
+  CheckIcon,
+  CircleAlertIcon,
+  CircleCheckIcon,
+  HandCoinsIcon,
+  InfoIcon,
+  PackageCheckIcon,
+  SendIcon,
+} from 'lucide-react'
+import { getBooking, reportPayment } from '@/api/bookings'
+import { firstFieldErrors, toApiError } from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Field } from '@/components/shared/form-field'
+import { EmptyState } from '@/components/shared/empty-state'
+import { BookingBadge, PaymentBadge } from '@/components/shared/status-badges'
+import { useApiQuery } from '@/hooks/useApiQuery'
+import type { Booking, Payment, PaymentMethod } from '@/types'
+import { formatDateTime, formatIDR, formatRange } from '@/utils/format'
+import { paymentMethodLabels } from '@/utils/constants'
 
 const REPORTED_PAYMENTS_KEY = 'camping-rental-reported-payments'
 
@@ -99,16 +114,26 @@ export default function BookingDetailPage() {
     }
   }
 
-  if (query.loadingFirst) return <PageLoader label="Memuat detail booking..." />
+  if (query.loadingFirst) {
+    return (
+      <div className="space-y-5">
+        <div className="h-40 animate-pulse rounded-xl bg-muted" />
+        <div className="h-72 animate-pulse rounded-xl bg-muted" />
+      </div>
+    )
+  }
+
   if (query.error || !booking) {
     return (
-      <div className="empty-state">
-        <h2>Booking tidak ditemukan</h2>
-        <p>{query.error ?? 'Booking tidak tersedia atau bukan milik Anda.'}</p>
-        <Link to="/booking/riwayat" className="btn btn-primary">
-          Ke Riwayat Booking
-        </Link>
-      </div>
+      <EmptyState
+        title="Booking tidak ditemukan"
+        description={query.error ?? 'Booking tidak tersedia atau bukan milik Anda.'}
+        action={
+          <Button asChild className="mt-3">
+            <Link to="/booking/riwayat">Ke Riwayat Booking</Link>
+          </Button>
+        }
+      />
     )
   }
 
@@ -118,198 +143,301 @@ export default function BookingDetailPage() {
       : timelineSteps.findIndex((step) => step.status === booking.status)
 
   return (
-    <div className="booking-detail">
-      <nav className="breadcrumb" aria-label="Breadcrumb">
-        <Link to="/booking/riwayat">Riwayat Booking</Link> <span>/</span>{' '}
-        <span>Booking #{booking.id}</span>
+    <div className="space-y-5">
+      <nav
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+        aria-label="Breadcrumb"
+      >
+        <Link to="/booking/riwayat" className="hover:text-foreground hover:underline">
+          Riwayat Booking
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span className="text-foreground">Booking #{booking.id}</span>
       </nav>
 
       {justCreated && (
-        <Alert kind="success">
-          Booking berhasil dibuat! Silakan lakukan pembayaran lalu laporkan di bawah ini.
+        <Alert variant="success">
+          <CircleCheckIcon />
+          <AlertDescription>
+            Booking berhasil dibuat! Silakan lakukan pembayaran lalu laporkan di bawah ini.
+          </AlertDescription>
         </Alert>
       )}
 
-      <div className="card booking-summary-card">
-        <div className="booking-summary-head">
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div>
-            <h1>Booking #{booking.id}</h1>
-            <p className="muted">Dibuat {formatDateTime(booking.created_at)}</p>
+            <CardTitle className="text-xl">Booking #{booking.id}</CardTitle>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Dibuat {formatDateTime(booking.created_at)}
+            </p>
           </div>
           <BookingBadge status={booking.status} />
-        </div>
+        </CardHeader>
 
-        <ol className="timeline" aria-label="Status pemesanan">
-          {timelineSteps.map((step, index) => (
-            <li
-              key={step.status}
-              className={`timeline-step ${index <= activeStepIndex ? 'done' : ''} ${
-                index === activeStepIndex ? 'current' : ''
-              }`}
-            >
-              <span className="timeline-dot" aria-hidden="true" />
-              <span className="timeline-label">{step.label}</span>
-            </li>
-          ))}
-        </ol>
-
-        <dl className="availability-meta">
-          <div>
-            <dt>Tanggal sewa</dt>
-            <dd>{formatRange(booking.start_date, booking.end_date)}</dd>
-          </div>
-          <div>
-            <dt>Durasi</dt>
-            <dd>{booking.duration_days} hari</dd>
-          </div>
-          <div>
-            <dt>Total biaya</dt>
-            <dd>{formatIDR(booking.total_amount)}</dd>
-          </div>
-        </dl>
-
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col">Alat</th>
-              <th scope="col">Kategori</th>
-              <th scope="col">Jumlah</th>
-              <th scope="col" className="text-right">
-                Subtotal
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {booking.items.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  {item.equipment ? (
-                    <Link to={`/katalog/${item.equipment.id}`}>{item.equipment.name}</Link>
-                  ) : (
-                    `Alat #${item.equipment_id}`
+        <CardContent className="space-y-6">
+          {/* Timeline */}
+          <ol
+            className={`flex gap-3 max-md:flex-col ${booking.status === 'cancelled' ? 'opacity-50' : ''}`}
+            aria-label="Status pemesanan"
+          >
+            {timelineSteps.map((step, index) => {
+              const done = index <= activeStepIndex && booking.status !== 'cancelled'
+              const current = index === activeStepIndex
+              return (
+                <li key={step.status} className="flex items-center gap-2.5 max-md:flex-row">
+                  <span
+                    aria-hidden="true"
+                    className={[
+                      'grid size-6 shrink-0 place-items-center rounded-full border-2 transition-colors',
+                      done
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'bg-card text-transparent',
+                      current ? 'ring-4 ring-primary/20' : '',
+                    ].join(' ')}
+                  >
+                    <CheckIcon className="size-3.5" />
+                  </span>
+                  <span
+                    className={[
+                      'text-xs font-semibold sm:text-sm',
+                      done ? 'text-foreground' : 'text-muted-foreground',
+                      index < timelineSteps.length - 1 ? '' : '',
+                    ].join(' ')}
+                  >
+                    {step.label}
+                  </span>
+                  {index < timelineSteps.length - 1 && (
+                    <span
+                      aria-hidden="true"
+                      className={`hidden h-0.5 w-full min-w-10 flex-1 sm:block ${
+                        index < activeStepIndex ? 'bg-primary' : 'bg-border'
+                      }`}
+                    />
                   )}
-                </td>
-                <td>{item.equipment?.category?.name ?? '-'}</td>
-                <td>{item.quantity} unit</td>
-                <td className="text-right">{formatIDR(item.subtotal)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </li>
+              )
+            })}
+          </ol>
+
+          <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="rounded-lg bg-muted px-3 py-2">
+              <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                Tanggal sewa
+              </dt>
+              <dd className="font-bold">{formatRange(booking.start_date, booking.end_date)}</dd>
+            </div>
+            <div className="rounded-lg bg-muted px-3 py-2">
+              <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                Durasi
+              </dt>
+              <dd className="font-bold">{booking.duration_days} hari</dd>
+            </div>
+            <div className="rounded-lg bg-muted px-3 py-2">
+              <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                Total biaya
+              </dt>
+              <dd className="font-bold">{formatIDR(booking.total_amount)}</dd>
+            </div>
+          </dl>
+
+          <div className="overflow-hidden rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                  <th scope="col" className="px-4 py-2.5 font-semibold">Alat</th>
+                  <th scope="col" className="px-4 py-2.5 font-semibold">Kategori</th>
+                  <th scope="col" className="px-4 py-2.5 font-semibold">Jumlah</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-semibold">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {booking.items.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-2.5 font-medium">
+                      {item.equipment ? (
+                        <Link to={`/katalog/${item.equipment.id}`} className="hover:text-primary hover:underline">
+                          {item.equipment.name}
+                        </Link>
+                      ) : (
+                        `Alat #${item.equipment_id}`
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {item.equipment?.category?.name ?? '-'}
+                    </td>
+                    <td className="px-4 py-2.5">{item.quantity} unit</td>
+                    <td className="px-4 py-2.5 text-right font-semibold">
+                      {formatIDR(item.subtotal)}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-muted/40">
+                  <td colSpan={3} className="px-4 py-2.5 text-right font-bold">Total</td>
+                  <td className="px-4 py-2.5 text-right font-extrabold text-primary">
+                    {formatIDR(booking.total_amount)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {booking.status === 'pending' && (
-        <div className="card payment-section">
-          <h2>Pembayaran</h2>
-          <p className="muted">
-            Lakukan pembayaran sesuai total tagihan, kemudian laporkan melalui formulir berikut.
-            Admin akan memverifikasi pembayaran Anda.
-          </p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HandCoinsIcon className="size-5 text-primary" /> Pembayaran
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Lakukan pembayaran sesuai total tagihan, kemudian laporkan melalui formulir berikut.
+              Admin akan memverifikasi pembayaran Anda.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {paymentSuccess && (
+              <Alert variant="success">
+                <CircleCheckIcon />
+                <AlertDescription>{paymentSuccess}</AlertDescription>
+              </Alert>
+            )}
+            {paymentError && (
+              <Alert variant="destructive">
+                <CircleAlertIcon />
+                <AlertDescription>{paymentError}</AlertDescription>
+              </Alert>
+            )}
 
-          {paymentSuccess && <Alert kind="success">{paymentSuccess}</Alert>}
-          {paymentError && <Alert kind="error">{paymentError}</Alert>}
+            <form onSubmit={handlePaymentSubmit} className="space-y-4">
+              <Field label="Metode pembayaran" htmlFor="payment-method">
+                <Select
+                  value={method}
+                  onValueChange={(value) => setMethod(value as PaymentMethod)}
+                >
+                  <SelectTrigger id="payment-method" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(paymentMethodLabels) as PaymentMethod[]).map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {paymentMethodLabels[value]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
 
-          <form onSubmit={handlePaymentSubmit}>
-            <Field label="Metode pembayaran" htmlFor="payment-method">
-              <select
-                id="payment-method"
-                className="input"
-                value={method}
-                onChange={(event) => setMethod(event.target.value as PaymentMethod)}
-              >
-                {(Object.keys(paymentMethodLabels) as PaymentMethod[]).map((value) => (
-                  <option key={value} value={value}>
-                    {paymentMethodLabels[value]}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {method === 'transfer' && (
-              <Alert kind="info">
-                Transfer ke BCA 1234567890 a.n. Camping Rental senilai{' '}
-                <strong>{formatIDR(booking.total_amount)}</strong>. Cantumkan nomor booking #
-                {booking.id} pada catatan.
-              </Alert>
-            )}
-            {method === 'qris' && (
-              <Alert kind="info">
-                Scan QRIS yang tersedia di kantor kami atau hubungi admin untuk menerima kode QRIS
-                senilai <strong>{formatIDR(booking.total_amount)}</strong>.
-              </Alert>
-            )}
-            {method === 'cash' && (
-              <Alert kind="info">
-                Lakukan pembayaran tunai di lokasi pengambilan alat senilai{' '}
-                <strong>{formatIDR(booking.total_amount)}</strong>.
-              </Alert>
-            )}
-            <Field
-              label="Catatan (opsional)"
-              htmlFor="payment-note"
-              hint="mis. nama bank pengirim, waktu transfer, atau nomor referensi."
-            >
-              <textarea
-                id="payment-note"
-                className="input"
-                rows={3}
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                maxLength={1000}
-              />
-            </Field>
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-              {submitting ? (
-                <Spinner size={16} />
-              ) : (
-                `Laporkan Pembayaran ${formatIDR(booking.total_amount)}`
+              {method === 'transfer' && (
+                <Alert variant="info">
+                  <InfoIcon />
+                  <AlertDescription>
+                    Transfer ke BCA 1234567890 a.n. Camping Rental senilai{' '}
+                    <strong>{formatIDR(booking.total_amount)}</strong>. Cantumkan nomor booking #
+                    {booking.id} pada catatan.
+                  </AlertDescription>
+                </Alert>
               )}
-            </button>
-          </form>
+              {method === 'qris' && (
+                <Alert variant="info">
+                  <InfoIcon />
+                  <AlertDescription>
+                    Scan QRIS yang tersedia di kantor kami atau hubungi admin untuk menerima kode
+                    QRIS senilai <strong>{formatIDR(booking.total_amount)}</strong>.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {method === 'cash' && (
+                <Alert variant="info">
+                  <InfoIcon />
+                  <AlertDescription>
+                    Lakukan pembayaran tunai di lokasi pengambilan alat senilai{' '}
+                    <strong>{formatIDR(booking.total_amount)}</strong>.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-          {reportedPayments.length > 0 && (
-            <div className="reported-payments">
-              <h3>Laporan pembayaran terkirim</h3>
-              <ul>
-                {reportedPayments.map((payment) => (
-                  <li key={payment.id}>
-                    <span>
-                      #{payment.id} &middot; {paymentMethodLabels[payment.method]} &middot;{' '}
-                      {payment.paid_at ? formatDateTime(payment.paid_at) : '-'}
-                    </span>
-                    <PaymentBadge status={payment.status} />
-                  </li>
-                ))}
-              </ul>
-              <p className="field-hint">
-                Halaman ini otomatis diperbarui setiap 15 detik saat menunggu verifikasi.
-              </p>
-            </div>
-          )}
-        </div>
+              <Field
+                label="Catatan (opsional)"
+                htmlFor="payment-note"
+                hint="mis. nama bank pengirim, waktu transfer, atau nomor referensi."
+              >
+                <Textarea
+                  id="payment-note"
+                  rows={3}
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  maxLength={1000}
+                />
+              </Field>
+
+              <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                <SendIcon data-icon="inline-start" />
+                {submitting
+                  ? 'Mengirim...'
+                  : `Laporkan Pembayaran ${formatIDR(booking.total_amount)}`}
+              </Button>
+            </form>
+
+            {reportedPayments.length > 0 && (
+              <div className="rounded-lg border p-3.5">
+                <h3 className="mb-2 text-sm font-bold">Laporan pembayaran terkirim</h3>
+                <ul className="space-y-2">
+                  {reportedPayments.map((payment) => (
+                    <li
+                      key={payment.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm"
+                    >
+                      <span>
+                        #{payment.id} &middot; {paymentMethodLabels[payment.method]} &middot;{' '}
+                        {payment.paid_at ? formatDateTime(payment.paid_at) : '-'}
+                      </span>
+                      <PaymentBadge status={payment.status} />
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Halaman ini otomatis diperbarui setiap 15 detik saat menunggu verifikasi.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {booking.status === 'paid' && (
-        <div className="card">
-          <h2>Pembayaran Terverifikasi</h2>
-          <p className="muted">
-            Pembayaran Anda telah dikonfirmasi admin. Booking akan diproses pada jadwal pengambilan;
-            halaman ini diperbarui otomatis setiap 15 detik.
-          </p>
-        </div>
+        <Card>
+          <CardContent className="flex items-start gap-3">
+            <PackageCheckIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-400" />
+            <div>
+              <h2 className="font-bold">Pembayaran Terverifikasi</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Pembayaran Anda telah dikonfirmasi admin. Booking akan diproses pada jadwal
+                pengambilan; halaman ini diperbarui otomatis setiap 15 detik.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {(booking.status === 'confirmed' || booking.status === 'completed') && (
-        <div className="card">
-          <h2>{booking.status === 'confirmed' ? 'Alat Sedang Dipinjam' : 'Sewa Selesai'}</h2>
-          <p className="muted">
+        <Alert variant={booking.status === 'confirmed' ? 'success' : 'default'}>
+          <CircleCheckIcon />
+          <AlertTitle>{booking.status === 'confirmed' ? 'Alat Sedang Dipinjam' : 'Sewa Selesai'}</AlertTitle>
+          <AlertDescription>
             {booking.status === 'confirmed'
               ? 'Selamat berkemah! Kembalikan alat sesuai jadwal agar tidak ada biaya tambahan.'
               : 'Terima kasih telah menggunakan layanan Camping Rental.'}
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {booking.status === 'cancelled' && <Alert kind="warning">Booking ini telah dibatalkan.</Alert>}
+      {booking.status === 'cancelled' && (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertDescription>Booking ini telah dibatalkan.</AlertDescription>
+        </Alert>
+      )}
     </div>
   )
 }
