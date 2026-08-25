@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import {
+  BanIcon,
   CheckIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   HandCoinsIcon,
+  HourglassIcon,
   InfoIcon,
   PackageCheckIcon,
   SendIcon,
@@ -27,30 +29,9 @@ import { Field } from '@/components/shared/form-field'
 import { EmptyState } from '@/components/shared/empty-state'
 import { BookingBadge, PaymentBadge } from '@/components/shared/status-badges'
 import { useApiQuery } from '@/hooks/useApiQuery'
-import type { Booking, Payment, PaymentMethod } from '@/types'
+import type { Booking, PaymentMethod } from '@/types'
 import { formatDateTime, formatIDR, formatRange } from '@/utils/format'
 import { paymentMethodLabels } from '@/utils/constants'
-
-const REPORTED_PAYMENTS_KEY = 'camping-rental-reported-payments'
-
-function loadReportedPayments(bookingId: number): Payment[] {
-  try {
-    const raw = localStorage.getItem(REPORTED_PAYMENTS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as Record<string, Payment[]>
-    return parsed[String(bookingId)] ?? []
-  } catch {
-    return []
-  }
-}
-
-function saveReportedPayment(bookingId: number, payment: Payment) {
-  const existing = loadReportedPayments(bookingId)
-  localStorage.setItem(
-    REPORTED_PAYMENTS_KEY,
-    JSON.stringify({ [String(bookingId)]: [...existing, payment] }),
-  )
-}
 
 const timelineSteps = [
   { status: 'pending', label: 'Menunggu Pembayaran' },
@@ -74,18 +55,18 @@ export default function BookingDetailPage() {
   const [paymentSuccess, setPaymentSuccess] = useState<string | null>(null)
   const [paymentError, setPaymentError] = useState<string | null>(null)
 
-  const reportedPayments = useMemo(
-    () => (id ? loadReportedPayments(Number(id)) : []),
-    // tick intentionally included: recompute after each refresh so new reports appear
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [id, tick],
-  )
-
   useEffect(() => {
     if (!booking || !['pending', 'paid'].includes(booking.status)) return
     const interval = setInterval(() => setTick((value) => value + 1), 15_000)
     return () => clearInterval(interval)
   }, [booking])
+
+  const payments = booking?.payments ?? []
+  const latestPayment = payments[0]
+  const isRejected = latestPayment?.status === 'rejected'
+  const hasBlockingPayment = payments.some(
+    (payment) => payment.status === 'pending' || payment.status === 'verified',
+  )
 
   const handlePaymentSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -98,10 +79,7 @@ export default function BookingDetailPage() {
         method,
         note: note.trim() || undefined,
       })
-      saveReportedPayment(booking.id, payment)
-      setPaymentSuccess(
-        `Laporan pembayaran #${payment.id} terkirim. Menunggu verifikasi admin (1x24 jam).`,
-      )
+      setPaymentSuccess(`Laporan pembayaran #${payment.id} terkirim. Menunggu verifikasi admin.`)
       setNote('')
       setTick((value) => value + 1)
     } catch (error) {
@@ -202,7 +180,6 @@ export default function BookingDetailPage() {
                     className={[
                       'text-xs font-semibold sm:text-sm',
                       done ? 'text-foreground' : 'text-muted-foreground',
-                      index < timelineSteps.length - 1 ? '' : '',
                     ].join(' ')}
                   >
                     {step.label}
@@ -296,6 +273,27 @@ export default function BookingDetailPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            {isRejected && (
+              <Alert variant="destructive">
+                <BanIcon />
+                <AlertTitle>Pembayaran ditolak</AlertTitle>
+                <AlertDescription>
+                  Laporan pembayaran terakhir Anda ditolak oleh admin. Silakan periksa kembali dan
+                  ajukan laporan baru melalui formulir di bawah.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {hasBlockingPayment && !isRejected && (
+              <Alert variant="info">
+                <HourglassIcon />
+                <AlertDescription>
+                  Laporan pembayaran Anda sedang menunggu verifikasi admin. Halaman ini diperbarui
+                  otomatis setiap 15 detik.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {paymentSuccess && (
               <Alert variant="success">
                 <CircleCheckIcon />
@@ -314,6 +312,7 @@ export default function BookingDetailPage() {
                 <Select
                   value={method}
                   onValueChange={(value) => setMethod(value as PaymentMethod)}
+                  disabled={hasBlockingPayment && !isRejected}
                 >
                   <SelectTrigger id="payment-method" className="w-full">
                     <SelectValue />
@@ -368,22 +367,30 @@ export default function BookingDetailPage() {
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   maxLength={1000}
+                  disabled={hasBlockingPayment && !isRejected}
                 />
               </Field>
 
-              <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={submitting || (hasBlockingPayment && !isRejected)}
+              >
                 <SendIcon data-icon="inline-start" />
                 {submitting
                   ? 'Mengirim...'
-                  : `Laporkan Pembayaran ${formatIDR(booking.total_amount)}`}
+                  : isRejected
+                    ? 'Laporkan Ulang Pembayaran'
+                    : `Laporkan Pembayaran ${formatIDR(booking.total_amount)}`}
               </Button>
             </form>
 
-            {reportedPayments.length > 0 && (
+            {payments.length > 0 && (
               <div className="rounded-lg border p-3.5">
-                <h3 className="mb-2 text-sm font-bold">Laporan pembayaran terkirim</h3>
+                <h3 className="mb-2 text-sm font-bold">Riwayat laporan pembayaran</h3>
                 <ul className="space-y-2">
-                  {reportedPayments.map((payment) => (
+                  {payments.map((payment) => (
                     <li
                       key={payment.id}
                       className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm"

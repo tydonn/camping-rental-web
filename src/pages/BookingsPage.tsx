@@ -20,6 +20,27 @@ const statusFilters: { value: BookingStatus | ''; label: string }[] = [
   { value: 'completed', label: 'Selesai' },
 ]
 
+function PaymentChip({ booking }: { booking: Booking }) {
+  if (booking.status !== 'pending') return null
+  const latest = booking.payments?.[0]
+  if (!latest) return null
+  if (latest.status === 'rejected') {
+    return (
+      <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-red-200 bg-red-100/70 px-2.5 py-0.5 text-[11px] font-bold text-red-700 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-400">
+        Pembayaran ditolak &mdash; laporkan ulang
+      </span>
+    )
+  }
+  if (latest.status === 'pending') {
+    return (
+      <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100/70 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-300">
+        Menunggu verifikasi admin
+      </span>
+    )
+  }
+  return null
+}
+
 export default function BookingsPage() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<BookingStatus | ''>('')
@@ -100,6 +121,7 @@ export default function BookingsPage() {
                           ? `${firstItem.equipment?.name ?? 'Alat'}${booking.items.length > 1 ? ` +${booking.items.length - 1} alat lain` : ''}`
                           : '-'}
                       </p>
+                      <PaymentChip booking={booking} />
                     </div>
                     <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
                       <span className="font-extrabold text-primary">

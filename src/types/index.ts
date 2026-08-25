@@ -77,6 +77,8 @@ export interface Booking {
   status: BookingStatus
   total_amount: string
   items: BookingItem[]
+  /** Riwayat laporan pembayaran, diurutkan terbaru dulu oleh API */
+  payments?: Payment[]
   created_at: string
 }
 
