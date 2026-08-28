@@ -1,9 +1,19 @@
 export type UserRole = 'admin' | 'pelanggan'
 
+/** Key setting yang dikenal frontend */
+export type SiteSettingKey = 'hero_image'
+
+export interface SiteSettings {
+  hero_image: string | null
+  /** Alamat/query lokasi untuk embed Google Maps di landing page */
+  maps_query: string | null
+}
+
 export interface User {
   id: number
   name: string
   email: string
+  phone_number: string | null
   role: UserRole
 }
 
@@ -71,6 +81,8 @@ export interface BookingItem {
 export interface Booking {
   id: number
   user_id: number
+  /** Data penyewa, hanya tersedia pada endpoint admin */
+  user?: User | null
   start_date: string
   end_date: string
   duration_days: number

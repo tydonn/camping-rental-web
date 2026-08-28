@@ -1,10 +1,25 @@
 import { useState } from 'react'
-import { CheckCheckIcon, CircleAlertIcon, PackageCheckIcon, RefreshCwIcon } from 'lucide-react'
+import {
+  CheckCheckIcon,
+  CircleAlertIcon,
+  InfoIcon,
+  MailIcon,
+  PackageCheckIcon,
+  PhoneIcon,
+  RefreshCwIcon,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { confirmPickup, listAdminBookings, processReturn } from '@/api/admin'
 import { toApiError } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { BookingBadge } from '@/components/shared/status-badges'
 import { EmptyState } from '@/components/shared/empty-state'
 import { DataPagination } from '@/components/shared/data-pagination'
@@ -27,6 +42,7 @@ export default function AdminBookingsPage() {
   const [tick, setTick] = useState(0)
 
   const [busyBookingId, setBusyBookingId] = useState<number | null>(null)
+  const [detailBooking, setDetailBooking] = useState<Booking | null>(null)
 
   const query = useApiQuery<Paginated<Booking>>(
     () =>
@@ -43,7 +59,7 @@ export default function AdminBookingsPage() {
     setBusyBookingId(booking.id)
     try {
       await confirmPickup(booking.id)
-      toast.success(`Pengambilan booking #${booking.id} dikonfirmasi. Stok telah diperbarui.`)
+      toast.success(`Pengambilan booking ${booking.id} dikonfirmasi. Stok telah diperbarui.`)
       setTick((value) => value + 1)
     } catch (error) {
       toast.error(toApiError(error).message)
@@ -56,7 +72,7 @@ export default function AdminBookingsPage() {
     setBusyBookingId(booking.id)
     try {
       await processReturn(booking.id)
-      toast.success(`Pengembalian booking #${booking.id} selesai. Stok telah dikembalikan.`)
+      toast.success(`Pengembalian booking ${booking.id} selesai. Stok telah dikembalikan.`)
       setTick((value) => value + 1)
     } catch (error) {
       toast.error(toApiError(error).message)
@@ -113,7 +129,7 @@ export default function AdminBookingsPage() {
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="w-full min-w-[780px] text-sm">
               <thead>
                 <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
                   <th scope="col" className="px-4 py-2.5 font-semibold">Booking</th>
@@ -128,8 +144,29 @@ export default function AdminBookingsPage() {
               <tbody className="divide-y">
                 {bookings.map((booking) => (
                   <tr key={booking.id} className="transition-colors hover:bg-muted/40">
-                    <td className="px-4 py-3 font-bold">#{booking.id}</td>
-                    <td className="px-4 py-3 text-muted-foreground">User #{booking.user_id}</td>
+                    <td className="px-4 py-3 font-bold">{booking.id}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <div>
+                          <span className="font-semibold text-foreground">
+                            {booking.user?.name ?? `User ${booking.user_id}`}
+                          </span>
+                          {booking.user?.phone_number && (
+                            <span className="block text-xs text-muted-foreground">
+                              {booking.user.phone_number}
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`Detail penyewa booking ${booking.id}`}
+                          onClick={() => setDetailBooking(booking)}
+                        >
+                          <InfoIcon />
+                        </Button>
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       {formatRange(booking.start_date, booking.end_date)}
                       <span className="block text-xs text-muted-foreground">
@@ -139,7 +176,7 @@ export default function AdminBookingsPage() {
                     <td className="max-w-48 px-4 py-3">
                       {booking.items.map((item) => (
                         <span key={item.id} className="block truncate text-xs text-muted-foreground">
-                          {item.equipment?.name ?? `Alat #${item.equipment_id}`} &times;
+                          {item.equipment?.name ?? `Alat ${item.equipment_id}`} &times;
                           {item.quantity}
                         </span>
                       ))}
@@ -153,14 +190,16 @@ export default function AdminBookingsPage() {
                         {busyBookingId === booking.id ? (
                           <span className="text-xs text-muted-foreground">Memproses...</span>
                         ) : booking.status === 'paid' ? (
-                          <Button size="sm" onClick={() => void handleConfirmPickup(booking)}>
-                            <PackageCheckIcon data-icon="inline-start" />
-                            Konfirmasi Pengambilan
+                          <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => void handleConfirmPickup(booking)}>
+                            <PackageCheckIcon data-icon="inline-start" className="sm:hidden" />
+                            <span className="hidden sm:inline">Konfirmasi Pengambilan</span>
+                            <span className="sm:hidden">Ambil</span>
                           </Button>
                         ) : booking.status === 'confirmed' ? (
-                          <Button size="sm" onClick={() => void handleProcessReturn(booking)}>
-                            <CheckCheckIcon data-icon="inline-start" />
-                            Proses Pengembalian
+                          <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => void handleProcessReturn(booking)}>
+                            <CheckCheckIcon data-icon="inline-start" className="sm:hidden" />
+                            <span className="hidden sm:inline">Proses Pengembalian</span>
+                            <span className="sm:hidden">Kembali</span>
                           </Button>
                         ) : (
                           <span className="text-muted-foreground">&ndash;</span>
@@ -179,6 +218,63 @@ export default function AdminBookingsPage() {
           />
         </>
       )}
+
+      <Dialog open={detailBooking !== null} onOpenChange={(open) => !open && setDetailBooking(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Detail Penyewa</DialogTitle>
+            <DialogDescription>
+              Kontak pemilik booking {detailBooking ? detailBooking.id : ''}.
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailBooking && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <InfoIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <div>
+                  <h3 className="font-bold">Nama</h3>
+                  <p className="mt-0.5 text-muted-foreground">
+                    {detailBooking.user?.name ?? `User ${detailBooking.user_id}`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <MailIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <div>
+                  <h3 className="font-bold">Email</h3>
+                  {detailBooking.user?.email ? (
+                    <a
+                      href={`mailto:${detailBooking.user.email}`}
+                      className="mt-0.5 block text-muted-foreground hover:text-primary hover:underline"
+                    >
+                      {detailBooking.user.email}
+                    </a>
+                  ) : (
+                    <p className="mt-0.5 text-muted-foreground">&ndash;</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <PhoneIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <div>
+                  <h3 className="font-bold">Nomor HP</h3>
+                  {detailBooking.user?.phone_number ? (
+                    <a
+                      href={`tel:${detailBooking.user.phone_number.replace(/[^+\d]/g, '')}`}
+                      className="mt-0.5 block text-muted-foreground hover:text-primary hover:underline"
+                    >
+                      {detailBooking.user.phone_number}
+                    </a>
+                  ) : (
+                    <p className="mt-0.5 text-muted-foreground">&ndash;</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

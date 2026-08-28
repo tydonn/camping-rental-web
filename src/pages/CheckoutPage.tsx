@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { PageLoader } from '@/components/shared/page-loader'
 import { EmptyState } from '@/components/shared/empty-state'
+import { EquipmentPhoto } from '@/components/EquipmentCard'
 import { useApiQuery } from '@/hooks/useApiQuery'
 import { formatIDR, inclusiveDays } from '@/utils/format'
 import type { Equipment as EquipmentType } from '@/types'
@@ -120,17 +121,23 @@ export default function CheckoutPage() {
             <CardContent className="space-y-4">
               <h2 className="font-bold">Ringkasan Pesanan</h2>
               <div className="flex justify-between gap-4">
-                <div>
-                  <strong className="leading-snug">{equipment.name}</strong>
-                  {equipment.category && (
-                    <span className="mt-1 block w-fit rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-secondary-foreground">
-                      {equipment.category.name}
-                    </span>
-                  )}
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatIDR(equipment.price_per_day)} &times; {state.quantity} unit &times;{' '}
-                    {days} hari
-                  </p>
+                <div className="flex items-start gap-3">
+                  <EquipmentPhoto
+                    equipment={equipment}
+                    className="size-14 shrink-0 rounded-lg border bg-muted/40"
+                  />
+                  <div>
+                    <strong className="leading-snug">{equipment.name}</strong>
+                    {equipment.category && (
+                      <span className="mt-1 block w-fit rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-secondary-foreground">
+                        {equipment.category.name}
+                      </span>
+                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatIDR(equipment.price_per_day)} &times; {state.quantity} unit &times;{' '}
+                      {days} hari
+                    </p>
+                  </div>
                 </div>
                 <span className="text-sm font-bold">{formatIDR(total)}</span>
               </div>

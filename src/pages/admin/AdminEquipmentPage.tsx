@@ -50,12 +50,14 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Field } from '@/components/shared/form-field'
+import { ImageUploadField } from '@/components/shared/image-upload-field'
 import { EmptyState } from '@/components/shared/empty-state'
 import { DataPagination } from '@/components/shared/data-pagination'
 import { PageLoader } from '@/components/shared/page-loader'
+import { EquipmentPhoto } from '@/components/EquipmentCard'
 import { useApiQuery } from '@/hooks/useApiQuery'
 import type { Category, Equipment as EquipmentType, Paginated } from '@/types'
-import { formatIDR } from '@/utils/format'
+import { formatIDR, resolvePhotoUrl } from '@/utils/format'
 
 interface EquipmentFormState {
   category_id: string
@@ -63,7 +65,8 @@ interface EquipmentFormState {
   description: string
   price_per_day: string
   stock: string
-  photo: string
+  photoFile: File | null
+  removePhoto: boolean
 }
 
 const emptyForm: EquipmentFormState = {
@@ -72,7 +75,8 @@ const emptyForm: EquipmentFormState = {
   description: '',
   price_per_day: '',
   stock: '1',
-  photo: '',
+  photoFile: null,
+  removePhoto: false,
 }
 
 interface DeleteTarget {
@@ -101,6 +105,7 @@ export default function AdminEquipmentPage() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState<string | null>(null)
   const [form, setForm] = useState<EquipmentFormState>(emptyForm)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [modalError, setModalError] = useState<string | null>(null)
@@ -176,6 +181,7 @@ export default function AdminEquipmentPage() {
 
   function openCreateModal() {
     setEditingId(null)
+    setExistingPhotoUrl(null)
     setForm({
       ...emptyForm,
       category_id: categories.length > 0 ? String(categories[0].id) : '',
@@ -187,13 +193,15 @@ export default function AdminEquipmentPage() {
 
   function openEditModal(equipment: EquipmentType) {
     setEditingId(equipment.id)
+    setExistingPhotoUrl(resolvePhotoUrl(equipment.photo))
     setForm({
       category_id: equipment.category ? String(equipment.category.id) : '',
       name: equipment.name,
       description: equipment.description ?? '',
       price_per_day: String(Number(equipment.price_per_day)),
       stock: String(equipment.stock),
-      photo: equipment.photo ?? '',
+      photoFile: null,
+      removePhoto: false,
     })
     setFormErrors({})
     setModalError(null)
@@ -211,7 +219,8 @@ export default function AdminEquipmentPage() {
       description: form.description.trim() || null,
       price_per_day: Number(form.price_per_day),
       stock: Number(form.stock),
-      photo: form.photo.trim() || null,
+      photo: form.photoFile,
+      remove_photo: editingId !== null && !form.photoFile && form.removePhoto,
     }
     try {
       if (editingId === null) {
@@ -361,10 +370,63 @@ export default function AdminEquipmentPage() {
             <EmptyState title="Belum ada alat" description="Tambahkan alat pertama Anda." />
           ) : (
             <>
-              <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+              <ul className="space-y-3 md:hidden">
+                {items.map((equipment) => (
+                  <li
+                    key={equipment.id}
+                    className="flex items-start gap-3 rounded-xl border bg-card p-3 shadow-sm"
+                  >
+                    <EquipmentPhoto
+                      equipment={equipment}
+                      className="h-14 w-14 shrink-0 rounded-lg border bg-muted/40"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="truncate font-semibold">{equipment.name}</p>
+                        <span className="shrink-0 text-right font-semibold">
+                          {formatIDR(equipment.price_per_day)}
+                          <span className="block text-[11px] font-normal text-muted-foreground">
+                            /hari
+                          </span>
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {equipment.category?.name ?? '-'} &middot; Stok {equipment.stock}
+                      </p>
+                      <div className="mt-2 flex gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 px-2"
+                          onClick={() => openEditModal(equipment)}
+                        >
+                          Ubah
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1 px-2"
+                          onClick={() =>
+                            setDeleteTarget({
+                              kind: 'equipment',
+                              id: equipment.id,
+                              name: equipment.name,
+                            })
+                          }
+                        >
+                          Hapus
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="hidden overflow-x-auto rounded-xl border bg-card shadow-sm md:block">
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                      <th scope="col" className="px-4 py-2.5 font-semibold">Foto</th>
                       <th scope="col" className="px-4 py-2.5 font-semibold">Alat</th>
                       <th scope="col" className="px-4 py-2.5 font-semibold">Kategori</th>
                       <th scope="col" className="px-4 py-2.5 font-semibold">Harga/hari</th>
@@ -375,6 +437,12 @@ export default function AdminEquipmentPage() {
                   <tbody className="divide-y">
                     {items.map((equipment) => (
                       <tr key={equipment.id} className="transition-colors hover:bg-muted/40">
+                        <td className="px-4 py-2.5">
+                          <EquipmentPhoto
+                            equipment={equipment}
+                            className="size-11 rounded-lg border bg-muted/40"
+                          />
+                        </td>
                         <td className="px-4 py-2.5 font-semibold">{equipment.name}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">
                           {equipment.category?.name ?? '-'}
@@ -383,12 +451,13 @@ export default function AdminEquipmentPage() {
                         <td className="px-4 py-2.5">{equipment.stock}</td>
                         <td className="px-4 py-2.5">
                           <div className="flex justify-end gap-1.5">
-                            <Button variant="outline" size="sm" onClick={() => openEditModal(equipment)}>
+                            <Button variant="outline" size="sm" className="px-2 sm:px-4" onClick={() => openEditModal(equipment)}>
                               Ubah
                             </Button>
                             <Button
                               variant="destructive"
                               size="sm"
+                              className="px-2 sm:px-4"
                               onClick={() =>
                                 setDeleteTarget({
                                   kind: 'equipment',
@@ -467,6 +536,17 @@ export default function AdminEquipmentPage() {
                 onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
               />
             </Field>
+            <ImageUploadField
+              label="Foto alat (opsional)"
+              file={form.photoFile}
+              onChange={(file) => setForm((prev) => ({ ...prev, photoFile: file }))}
+              existingUrl={existingPhotoUrl}
+              removeExisting={form.removePhoto}
+              onRemoveExistingChange={(remove) =>
+                setForm((prev) => ({ ...prev, removePhoto: remove }))
+              }
+              error={formErrors.photo}
+            />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Harga per hari (Rp)" error={formErrors.price_per_day}>
                 <Input
@@ -490,16 +570,6 @@ export default function AdminEquipmentPage() {
                 />
               </Field>
             </div>
-            <Field
-              label="Foto (path/URL, opsional)"
-              error={formErrors.photo}
-              hint="mis. equipment/tenda-dome.jpg atau URL lengkap."
-            >
-              <Input
-                value={form.photo}
-                onChange={(event) => setForm((prev) => ({ ...prev, photo: event.target.value }))}
-              />
-            </Field>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
                 Batal

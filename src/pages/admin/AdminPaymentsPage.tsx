@@ -44,7 +44,7 @@ export default function AdminPaymentsPage() {
     try {
       await verifyPayment(payment.id)
       toast.success(
-        `Pembayaran #${payment.id} diverifikasi. Booking #${payment.booking_id} kini berstatus dibayar.`,
+        `Pembayaran ${payment.id} diverifikasi. Booking ${payment.booking_id} kini berstatus dibayar.`,
       )
       setTick((value) => value + 1)
     } catch (error) {
@@ -58,7 +58,7 @@ export default function AdminPaymentsPage() {
     setBusyId(payment.id)
     try {
       await rejectPayment(payment.id)
-      toast.info(`Pembayaran #${payment.id} ditolak. Pelanggan dapat melaporkan ulang.`)
+      toast.info(`Pembayaran ${payment.id} ditolak. Pelanggan dapat melaporkan ulang.`)
       setTick((value) => value + 1)
     } catch (error) {
       toast.error(toApiError(error).message)
@@ -118,7 +118,7 @@ export default function AdminPaymentsPage() {
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
-            <table className="w-full min-w-[900px] text-sm">
+            <table className="w-full min-w-[800px] text-sm">
               <thead>
                 <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
                   <th scope="col" className="px-4 py-2.5 font-semibold">ID</th>
@@ -134,8 +134,8 @@ export default function AdminPaymentsPage() {
               <tbody className="divide-y">
                 {payments.map((payment) => (
                   <tr key={payment.id} className="transition-colors hover:bg-muted/40">
-                    <td className="px-4 py-3 font-bold">#{payment.id}</td>
-                    <td className="px-4 py-3 text-muted-foreground">#{payment.booking_id}</td>
+                    <td className="px-4 py-3 font-bold">{payment.id}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{payment.booking_id}</td>
                     <td className="px-4 py-3">{paymentMethodLabels[payment.method] ?? payment.method}</td>
                     <td className="px-4 py-3 font-semibold">{formatIDR(payment.amount)}</td>
                     <td className="max-w-56 px-4 py-3 text-xs break-words text-muted-foreground">
@@ -153,12 +153,13 @@ export default function AdminPaymentsPage() {
                           <span className="text-xs text-muted-foreground">Memproses...</span>
                         ) : payment.status === 'pending' ? (
                           <>
-                            <Button size="sm" onClick={() => void handleVerify(payment)}>
-                              <CheckCircle2Icon data-icon="inline-start" />
-                              Verifikasi
+                            <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => void handleVerify(payment)}>
+                              <CheckCircle2Icon data-icon="inline-start" className="sm:hidden" />
+                              <span className="hidden sm:inline">Verifikasi</span>
+                              <span className="sm:hidden">OK</span>
                             </Button>
-                            <Button variant="destructive" size="sm" onClick={() => void handleReject(payment)}>
-                              <CircleXIcon data-icon="inline-start" />
+                            <Button variant="destructive" size="sm" className="px-2 sm:px-4" onClick={() => void handleReject(payment)}>
+                              <CircleXIcon data-icon="inline-start" className="sm:hidden" />
                               Tolak
                             </Button>
                           </>

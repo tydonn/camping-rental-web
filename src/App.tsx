@@ -1,10 +1,11 @@
-import { Navigate, Route, Routes, Link } from 'react-router-dom'
+import { Route, Routes, Link } from 'react-router-dom'
 import Layout from './components/Layout'
 import { RequireAuth, RequireRole } from './components/Guard'
 import { EmptyState } from './components/shared/empty-state'
 import { Button } from './components/ui/button'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import LandingPage from './pages/LandingPage'
 import CatalogPage from './pages/CatalogPage'
 import EquipmentDetailPage from './pages/EquipmentDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
@@ -13,12 +14,13 @@ import BookingDetailPage from './pages/BookingDetailPage'
 import AdminEquipmentPage from './pages/admin/AdminEquipmentPage'
 import AdminBookingsPage from './pages/admin/AdminBookingsPage'
 import AdminPaymentsPage from './pages/admin/AdminPaymentsPage'
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/katalog" replace />} />
+        <Route index element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/katalog" element={<CatalogPage />} />
@@ -34,6 +36,7 @@ export default function App() {
           <Route path="/admin/equipment" element={<AdminEquipmentPage />} />
           <Route path="/admin/bookings" element={<AdminBookingsPage />} />
           <Route path="/admin/payments" element={<AdminPaymentsPage />} />
+          <Route path="/admin/settings" element={<AdminSettingsPage />} />
         </Route>
 
         <Route

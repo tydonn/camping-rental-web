@@ -15,7 +15,31 @@ export interface AdminEquipmentPayload {
   description?: string | null
   price_per_day: number | string
   stock: number
-  photo?: string | null
+  /** File foto baru (jpg/jpeg/png/webp, maks 2MB). */
+  photo?: File | null
+}
+
+export interface AdminEquipmentUpdatePayload extends Partial<AdminEquipmentPayload> {
+  remove_photo?: boolean
+}
+
+function toEquipmentFormData(
+  payload: AdminEquipmentUpdatePayload,
+  { forUpdate }: { forUpdate: boolean },
+): FormData {
+  const formData = new FormData()
+  if (forUpdate) formData.append('_method', 'PUT')
+  if (payload.category_id !== undefined)
+    formData.append('category_id', String(payload.category_id))
+  if (payload.name !== undefined) formData.append('name', payload.name)
+  if (payload.description !== undefined)
+    formData.append('description', payload.description ?? '')
+  if (payload.price_per_day !== undefined)
+    formData.append('price_per_day', String(payload.price_per_day))
+  if (payload.stock !== undefined) formData.append('stock', String(payload.stock))
+  if (payload.photo instanceof File) formData.append('photo', payload.photo)
+  if (payload.remove_photo) formData.append('remove_photo', 'true')
+  return formData
 }
 
 export async function listCategories(): Promise<Category[]> {
@@ -38,15 +62,21 @@ export async function deleteCategory(id: number): Promise<void> {
 }
 
 export async function createEquipment(payload: AdminEquipmentPayload): Promise<Equipment> {
-  const response = await api.post<{ data: Equipment }>('/admin/equipment', payload)
+  const response = await api.post<{ data: Equipment }>(
+    '/admin/equipment',
+    toEquipmentFormData(payload, { forUpdate: false }),
+  )
   return response.data.data
 }
 
 export async function updateEquipment(
   id: number,
-  payload: Partial<AdminEquipmentPayload>,
+  payload: AdminEquipmentUpdatePayload,
 ): Promise<Equipment> {
-  const response = await api.put<{ data: Equipment }>(`/admin/equipment/${id}`, payload)
+  const response = await api.post<{ data: Equipment }>(
+    `/admin/equipment/${id}`,
+    toEquipmentFormData(payload, { forUpdate: true }),
+  )
   return response.data.data
 }
 

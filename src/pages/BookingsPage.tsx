@@ -113,7 +113,7 @@ export default function BookingsPage() {
                   >
                     <div className="space-y-0.5">
                       <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-                        Booking #{booking.id}
+                        Booking {booking.id}
                       </span>
                       <p className="font-semibold">{formatRange(booking.start_date, booking.end_date)}</p>
                       <p className="truncate text-sm text-muted-foreground">

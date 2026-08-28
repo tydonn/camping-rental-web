@@ -28,6 +28,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Field } from '@/components/shared/form-field'
 import { EmptyState } from '@/components/shared/empty-state'
 import { BookingBadge, PaymentBadge } from '@/components/shared/status-badges'
+import { EquipmentPhoto } from '@/components/EquipmentCard'
 import { useApiQuery } from '@/hooks/useApiQuery'
 import type { Booking, PaymentMethod } from '@/types'
 import { formatDateTime, formatIDR, formatRange } from '@/utils/format'
@@ -79,7 +80,7 @@ export default function BookingDetailPage() {
         method,
         note: note.trim() || undefined,
       })
-      setPaymentSuccess(`Laporan pembayaran #${payment.id} terkirim. Menunggu verifikasi admin.`)
+      setPaymentSuccess(`Laporan pembayaran ${payment.id} terkirim. Menunggu verifikasi admin.`)
       setNote('')
       setTick((value) => value + 1)
     } catch (error) {
@@ -130,7 +131,7 @@ export default function BookingDetailPage() {
           Riwayat Booking
         </Link>
         <span aria-hidden="true">/</span>
-        <span className="text-foreground">Booking #{booking.id}</span>
+        <span className="text-foreground">Booking {booking.id}</span>
       </nav>
 
       {justCreated && (
@@ -145,7 +146,7 @@ export default function BookingDetailPage() {
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="text-xl">Booking #{booking.id}</CardTitle>
+            <CardTitle className="text-xl">Booking {booking.id}</CardTitle>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Dibuat {formatDateTime(booking.created_at)}
             </p>
@@ -187,9 +188,8 @@ export default function BookingDetailPage() {
                   {index < timelineSteps.length - 1 && (
                     <span
                       aria-hidden="true"
-                      className={`hidden h-0.5 w-full min-w-10 flex-1 sm:block ${
-                        index < activeStepIndex ? 'bg-primary' : 'bg-border'
-                      }`}
+                      className={`hidden h-0.5 w-full min-w-10 flex-1 sm:block ${index < activeStepIndex ? 'bg-primary' : 'bg-border'
+                        }`}
                     />
                   )}
                 </li>
@@ -218,7 +218,7 @@ export default function BookingDetailPage() {
             </div>
           </dl>
 
-          <div className="overflow-hidden rounded-lg border">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -232,13 +232,24 @@ export default function BookingDetailPage() {
                 {booking.items.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-2.5 font-medium">
-                      {item.equipment ? (
-                        <Link to={`/katalog/${item.equipment.id}`} className="hover:text-primary hover:underline">
-                          {item.equipment.name}
-                        </Link>
-                      ) : (
-                        `Alat #${item.equipment_id}`
-                      )}
+                      <div className="flex items-center gap-2.5">
+                        {item.equipment && (
+                          <EquipmentPhoto
+                            equipment={item.equipment}
+                            className="size-10 shrink-0 rounded-md border bg-muted/40"
+                          />
+                        )}
+                        {item.equipment ? (
+                          <Link
+                            to={`/katalog/${item.equipment.id}`}
+                            className="hover:text-primary hover:underline"
+                          >
+                            {item.equipment.name}
+                          </Link>
+                        ) : (
+                          `Alat ${item.equipment_id}`
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {item.equipment?.category?.name ?? '-'}
@@ -332,7 +343,7 @@ export default function BookingDetailPage() {
                   <InfoIcon />
                   <AlertDescription>
                     Transfer ke BCA 1234567890 a.n. Camping Rental senilai{' '}
-                    <strong>{formatIDR(booking.total_amount)}</strong>. Cantumkan nomor booking #
+                    <strong>{formatIDR(booking.total_amount)}</strong>. Cantumkan nomor booking
                     {booking.id} pada catatan.
                   </AlertDescription>
                 </Alert>
@@ -381,8 +392,8 @@ export default function BookingDetailPage() {
                 {submitting
                   ? 'Mengirim...'
                   : isRejected
-                    ? 'Laporkan Ulang Pembayaran'
-                    : `Laporkan Pembayaran ${formatIDR(booking.total_amount)}`}
+                    ? 'Laporkan Ulang'
+                    : `Bayar ${formatIDR(booking.total_amount)}`}
               </Button>
             </form>
 
@@ -396,7 +407,7 @@ export default function BookingDetailPage() {
                       className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-sm"
                     >
                       <span>
-                        #{payment.id} &middot; {paymentMethodLabels[payment.method]} &middot;{' '}
+                        {payment.id} &middot; {paymentMethodLabels[payment.method]} &middot;{' '}
                         {payment.paid_at ? formatDateTime(payment.paid_at) : '-'}
                       </span>
                       <PaymentBadge status={payment.status} />

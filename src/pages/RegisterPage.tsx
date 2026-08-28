@@ -21,7 +21,13 @@ export default function RegisterPage() {
   const { register } = useAuth()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', password_confirmation: '' })
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone_number: '',
+    password: '',
+    password_confirmation: '',
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -38,11 +44,22 @@ export default function RegisterPage() {
       setErrors({ password_confirmation: 'Konfirmasi password tidak cocok.' })
       return
     }
+    const phoneNumber = form.phone_number.trim()
+    if (phoneNumber && !/^[0-9\s()+-]{1,20}$/.test(phoneNumber)) {
+      setErrors({
+        phone_number: 'Nomor HP hanya boleh berisi angka, spasi, +, -, ( ) dan maksimal 20 karakter.',
+      })
+      return
+    }
     setSubmitting(true)
     setErrors({})
     setFormError(null)
     try {
-      await register({ ...form, email: form.email.trim() })
+      await register({
+        ...form,
+        email: form.email.trim(),
+        ...(phoneNumber ? { phone_number: phoneNumber } : {}),
+      })
       navigate('/katalog', { replace: true })
     } catch (error) {
       const fieldMap = firstFieldErrors(error)
@@ -92,6 +109,22 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={update('email')}
                 required
+              />
+            </Field>
+            <Field
+              label="Nomor HP (opsional)"
+              htmlFor="phone_number"
+              error={errors.phone_number}
+              hint="mis. 0812-3456-7890, maksimal 20 karakter."
+            >
+              <Input
+                id="phone_number"
+                type="tel"
+                autoComplete="tel"
+                placeholder="081234567890"
+                value={form.phone_number}
+                onChange={update('phone_number')}
+                maxLength={20}
               />
             </Field>
             <Field
