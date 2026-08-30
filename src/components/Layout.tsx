@@ -72,9 +72,8 @@ export default function Layout() {
           <SidebarTrigger className="md:hidden" />
           <NavLink
             to="/"
-            className={`flex shrink-0 items-center gap-2 font-extrabold tracking-tight ${
-              isMobile ? '' : 'mr-2'
-            }`}
+            className={`flex shrink-0 items-center gap-2 font-extrabold tracking-tight ${isMobile ? '' : 'mr-2'
+              }`}
           >
             <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
               <MapPinnedIcon className="size-4" />
@@ -101,8 +100,7 @@ export default function Layout() {
               )}
               {user?.role === 'admin' && (
                 <NavLink
-                  to={adminTabs[0].to}
-                  end
+                  to="/admin/bookings"
                   className={({ isActive }) => navClass({ isActive })}
                 >
                   Admin
@@ -173,7 +171,7 @@ export default function Layout() {
               <NavLink
                 key={tab.to}
                 to={tab.to}
-                end={tab.to === '/admin/equipment'}
+                end={tab.to === '/admin/bookings'}
                 className={tabClass}
               >
                 {tab.label}

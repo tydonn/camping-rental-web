@@ -1,0 +1,30 @@
+{
+  "bg-1": {
+    "id": "bg-1",
+    "cmd": "cd \"D:\\Web\\vWebDev\\camping-rental\\camping-rental-web\" && npm run build 2>&1 | tail -20",
+    "cwd": "D:\\Web\\WebDev\\camping-rental\\camping-rental-web",
+    "pid": 11756,
+    "start_time": 1788052104.9107537,
+    "start_time_iso": "2026-08-30T01:08:24Z",
+    "status": "completed",
+    "log_file": ".utim_tmp/tasks/bg-1.log",
+    "exit_code": 0,
+    "duration_seconds": 9.04,
+    "end_time": 1788052110.9414783,
+    "end_time_iso": "2026-08-30T01:08:30Z"
+  },
+  "bg-2": {
+    "id": "bg-2",
+    "cmd": "cd \"D:\\Web(WebDev\\camping-rental\\camping-rental-web\" && npm run build 2>&1 | tail -20",
+    "cwd": "D:\\Web\\WebDev\\camping-rental\\camping-rental-web",
+    "pid": 4720,
+    "start_time": 1788052949.34722,
+    "start_time_iso": "2026-08-30T01:22:29Z",
+    "status": "completed",
+    "log_file": ".utim_tmp/tasks/bg-2.log",
+    "exit_code": 0,
+    "duration_seconds": 9.85,
+    "end_time": 1788052956.1944,
+    "end_time_iso": "2026-08-30T01:22:36Z"
+  }
+}
