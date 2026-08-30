@@ -65,51 +65,74 @@ export default function LandingPage() {
 
   return (
     <div>
-      <section
-        className="relative isolate flex min-h-[70vh] items-center overflow-hidden pt-10 sm:min-h-[82vh] sm:pt-12 lg:min-h-[90vh]"
-        aria-label="Beranda"
-      >
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 -z-20 bg-gradient-to-br from-primary via-emerald-600 to-teal-700"
-        />
-        {!showHeroImage && (
-          <TentIcon
-            aria-hidden="true"
-            className="absolute -bottom-12 -right-8 -z-10 size-64 rotate-6 text-white/15 sm:size-96"
-          />
-        )}
-        {showHeroImage && (
-          <>
-            <img
-              src={heroUrl ?? undefined}
-              alt=""
-              className="absolute inset-0 -z-20 h-full w-full object-cover"
-              onError={() => setHeroFailed(true)}
-            />
-            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-black/55" />
-          </>
-        )}
+      <section className="relative isolate flex flex-col overflow-hidden bg-background" aria-label="Beranda">
+        <div className="flex flex-1 items-center">
+          <div className="grid w-full grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-8">
+            <div className="relative isolate flex items-center justify-center overflow-visible px-4 pb-6 sm:px-6 lg:order-1 lg:px-8 lg:py-12 xl:pr-12">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -z-10 size-72 rounded-full bg-primary/20 blur-3xl lg:size-80 -right-6 -top-6"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -z-10 size-72 rounded-full bg-primary/20 blur-3xl lg:size-80 -bottom-6 -left-6"
+              />
+              <div className="relative w-full max-w-[520px] overflow-hidden rounded-2xl shadow-lg ring-1 ring-border">
+                <div className="aspect-square w-full bg-muted">
+                  {showHeroImage ? (
+                    <img
+                      src={heroUrl ?? undefined}
+                      alt="Hero camping"
+                      className="h-full w-full object-cover object-center"
+                      onError={() => setHeroFailed(true)}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                      <TentIcon aria-hidden="true" className="size-24 rotate-6 text-muted-foreground/30 sm:size-32" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <div className="flex max-w-2xl flex-col items-start gap-4 py-20 text-white sm:gap-5 sm:py-28">
-            <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest backdrop-blur">
-              Sewa alat camping mudah &amp; cepat
+            <div className="flex items-center justify-center px-4 py-8 sm:px-6 lg:order-2 lg:justify-center lg:px-12 lg:py-20 xl:px-16">
+              <div className="flex w-full max-w-[520px] flex-col items-start justify-center gap-5 py-4 lg:py-0">
+                <span className="rounded-full border bg-muted px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Sewa alat camping mudah &amp; cepat
+                </span>
+                <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
+                  PETUALANGAN ALAM DIMULAI DARI PERLENGKAPAN YANG TEPAT
+                </h1>
+                <p className="text-md leading-relaxed text-muted-foreground">
+                  Tenda, carrier, sleeping bag, hingga perlengkapan outdoor lainnya siap disewa
+                  dengan harga bersahabat. Booking online, bayar, lalu ambil di lokasi — kami
+                  urus sisanya.
+                </p>
+                <Button size="lg" asChild className="mt-1">
+                  <Link to="/katalog">
+                    Lihat Katalog
+                    <ArrowRightIcon data-icon="inline-end" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t bg-muted/40">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-3 text-xs font-semibold text-muted-foreground sm:justify-between sm:px-6 sm:text-sm">
+            <span className="inline-flex items-center gap-1.5">
+              <BadgeCheckIcon className="size-4 text-primary" aria-hidden="true" /> 500+ Penyewa Puas
             </span>
-            <h1 className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
-              Petualangan Alam Dimulai dari Perlengkapan yang Tepat
-            </h1>
-            <p className="text-sm leading-relaxed text-white/85 sm:text-base">
-              Tenda, carrier, sleeping bag, hingga perlengkapan outdoor lainnya siap disewa dengan
-              harga bersahabat. Booking online, bayar, lalu ambil di lokasi &mdash; kami urus
-              sisanya.
-            </p>
-            <Button size="lg" asChild className="mt-2">
-              <Link to="/katalog">
-                Lihat Katalog
-                <ArrowRightIcon data-icon="inline-end" />
-              </Link>
-            </Button>
+            <span className="inline-flex items-center gap-1.5">
+              <SparklesIcon className="size-4 text-primary" aria-hidden="true" /> Alat Terawat &amp; Bersih
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <ClockIcon className="size-4 text-primary" aria-hidden="true" /> Booking Online 24 Jam
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <LifeBuoyIcon className="size-4 text-primary" aria-hidden="true" /> Support Cepat
+            </span>
           </div>
         </div>
       </section>

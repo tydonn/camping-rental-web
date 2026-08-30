@@ -72,8 +72,7 @@ export default function Layout() {
           <SidebarTrigger className="md:hidden" />
           <NavLink
             to="/"
-            className={`flex shrink-0 items-center gap-2 font-extrabold tracking-tight ${isMobile ? '' : 'mr-2'
-              }`}
+            className={`flex shrink-0 items-center gap-2 font-extrabold tracking-tight ${isMobile ? '' : 'mr-2'}`}
           >
             <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
               <MapPinnedIcon className="size-4" />
@@ -90,19 +89,12 @@ export default function Layout() {
                 Katalog
               </NavLink>
               {user && (
-                <NavLink
-                  to="/booking/riwayat"
-                  end
-                  className={({ isActive }) => navClass({ isActive })}
-                >
+                <NavLink to="/booking/riwayat" end className={({ isActive }) => navClass({ isActive })}>
                   Riwayat Booking
                 </NavLink>
               )}
               {user?.role === 'admin' && (
-                <NavLink
-                  to="/admin/bookings"
-                  className={({ isActive }) => navClass({ isActive })}
-                >
+                <NavLink to="/admin/bookings" className={({ isActive }) => navClass({ isActive })}>
                   Admin
                 </NavLink>
               )}
