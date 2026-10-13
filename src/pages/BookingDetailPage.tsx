@@ -96,8 +96,8 @@ export default function BookingDetailPage() {
   if (query.loadingFirst) {
     return (
       <div className="space-y-5">
-        <div className="h-40 animate-pulse rounded-xl bg-muted" />
-        <div className="h-72 animate-pulse rounded-xl bg-muted" />
+        <div className="h-40 animate-pulse rounded-[2px] bg-muted" />
+        <div className="h-72 animate-pulse rounded-[2px] bg-muted" />
       </div>
     )
   }
@@ -168,7 +168,7 @@ export default function BookingDetailPage() {
                   <span
                     aria-hidden="true"
                     className={[
-                      'grid size-6 shrink-0 place-items-center rounded-full border-2 transition-colors',
+                      'grid size-4 shrink-0 place-items-center rounded-[2px] border transition-colors',
                       done
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'bg-card text-transparent',
@@ -198,19 +198,19 @@ export default function BookingDetailPage() {
           </ol>
 
           <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <div className="rounded-lg bg-muted px-3 py-2">
+            <div className="border-b border-rule pb-2">
               <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                 Tanggal sewa
               </dt>
               <dd className="font-bold">{formatRange(booking.start_date, booking.end_date)}</dd>
             </div>
-            <div className="rounded-lg bg-muted px-3 py-2">
+            <div className="border-b border-rule pb-2">
               <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                 Durasi
               </dt>
               <dd className="font-bold">{booking.duration_days} hari</dd>
             </div>
-            <div className="rounded-lg bg-muted px-3 py-2">
+            <div className="border-b border-rule pb-2">
               <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                 Total biaya
               </dt>
@@ -218,7 +218,7 @@ export default function BookingDetailPage() {
             </div>
           </dl>
 
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto border border-rule">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -262,7 +262,7 @@ export default function BookingDetailPage() {
                 ))}
                 <tr className="bg-muted/40">
                   <td colSpan={3} className="px-4 py-2.5 text-right font-bold">Total</td>
-                  <td className="px-4 py-2.5 text-right font-extrabold text-primary">
+                  <td className="px-4 py-2.5 text-right font-mono tabular-nums">
                     {formatIDR(booking.total_amount)}
                   </td>
                 </tr>
@@ -398,7 +398,7 @@ export default function BookingDetailPage() {
             </form>
 
             {payments.length > 0 && (
-              <div className="rounded-lg border p-3.5">
+              <div className="border border-rule p-3.5">
                 <h3 className="mb-2 text-sm font-bold">Riwayat laporan pembayaran</h3>
                 <ul className="space-y-2">
                   {payments.map((payment) => (
@@ -426,7 +426,7 @@ export default function BookingDetailPage() {
       {booking.status === 'paid' && (
         <Card>
           <CardContent className="flex items-start gap-3">
-            <PackageCheckIcon className="mt-0.5 size-5 text-emerald-600 dark:text-emerald-400" />
+            <PackageCheckIcon className="mt-0.5 size-5 text-emerald-700" />
             <div>
               <h2 className="font-bold">Pembayaran Terverifikasi</h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
@@ -445,7 +445,7 @@ export default function BookingDetailPage() {
           <AlertDescription>
             {booking.status === 'confirmed'
               ? 'Selamat berkemah! Kembalikan alat sesuai jadwal agar tidak ada biaya tambahan.'
-              : 'Terima kasih telah menggunakan layanan Camping Rental.'}
+              : 'Terima kasih telah menggunakan layanan Berkah Alam Outdoor Organizer.'}
           </AlertDescription>
         </Alert>
       )}

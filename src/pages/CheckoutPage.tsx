@@ -81,7 +81,7 @@ export default function CheckoutPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">Checkout Booking</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Checkout Booking</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Periksa pesanan Anda sebelum membuat booking.
         </p>
@@ -124,12 +124,12 @@ export default function CheckoutPage() {
                 <div className="flex items-start gap-3">
                   <EquipmentPhoto
                     equipment={equipment}
-                    className="size-14 shrink-0 rounded-lg border bg-muted/40"
+                    className="size-14 shrink-0 border border-rule bg-muted"
                   />
                   <div>
                     <strong className="leading-snug">{equipment.name}</strong>
                     {equipment.category && (
-                      <span className="mt-1 block w-fit rounded-full bg-secondary px-2 py-0.5 text-[11px] font-bold text-secondary-foreground">
+                      <span className="mt-1 block w-fit font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
                         {equipment.category.name}
                       </span>
                     )}
@@ -159,7 +159,7 @@ export default function CheckoutPage() {
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="font-bold">Total</span>
-                <span className="text-lg font-extrabold text-primary">{formatIDR(total)}</span>
+                <span className="font-mono text-lg tabular-nums">{formatIDR(total)}</span>
               </div>
               <Link
                 to={`/katalog/${equipment.id}`}

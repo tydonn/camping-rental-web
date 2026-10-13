@@ -75,7 +75,7 @@ export default function RegisterPage() {
     <div className="flex justify-center py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="items-center text-center">
-          <span className="mx-auto mb-1 grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
+          <span className="mx-auto mb-1 grid size-10 place-items-center rounded-[2px] bg-primary/10 text-primary">
             <TentIcon className="size-5.5" />
           </span>
           <CardTitle className="text-xl">Buat Akun Baru</CardTitle>

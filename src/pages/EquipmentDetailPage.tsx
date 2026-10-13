@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Field } from '@/components/shared/form-field'
 import { EmptyState } from '@/components/shared/empty-state'
+import { StockBadge } from '@/components/shared/status-badges'
 import { EquipmentPhoto } from '@/components/EquipmentCard'
 import { addDaysISO, formatIDR, inclusiveDays, todayISO } from '@/utils/format'
 import type { AvailabilityResult, Equipment as EquipmentType } from '@/types'
@@ -48,7 +48,7 @@ function AvailabilityPanel({ result }: { result: AvailabilityResult }) {
           ['Sudah dibooking', String(result.booked)],
           ['Tersedia', String(result.available)],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-lg bg-muted px-3 py-2">
+          <div key={label} className="border-b border-rule pb-2">
             <dt className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
               {label}
             </dt>
@@ -105,14 +105,14 @@ export default function EquipmentDetailPage() {
   if (detail.loadingFirst) {
     return (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr_300px]">
-        <div className="aspect-[4/3] animate-pulse rounded-xl bg-muted" />
+        <div className="aspect-[4/3] animate-pulse rounded-[2px] bg-muted" />
         <div className="space-y-4 py-2">
           <div className="h-6 w-24 animate-pulse rounded bg-muted" />
           <div className="h-9 w-2/3 animate-pulse rounded bg-muted" />
           <div className="h-7 w-40 animate-pulse rounded bg-muted" />
           <div className="h-20 w-full animate-pulse rounded bg-muted" />
         </div>
-        <div className="h-96 animate-pulse rounded-xl bg-muted" />
+        <div className="h-96 animate-pulse rounded-[2px] bg-muted" />
       </div>
     )
   }
@@ -151,28 +151,22 @@ export default function EquipmentDetailPage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,420px)_1fr_300px]">
         <Card className="overflow-hidden p-2.5">
-          <EquipmentPhoto equipment={equipment} className="aspect-[4/3] rounded-lg" />
+          <EquipmentPhoto equipment={equipment} className="aspect-[4/3]" />
         </Card>
 
         <div>
           {equipment.category && (
-            <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-bold text-secondary-foreground">
+            <span className="font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
               {equipment.category.name}
             </span>
           )}
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{equipment.name}</h1>
+          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.02em]">{equipment.name}</h1>
           <p className="mt-2 text-2xl font-bold text-primary">
             {formatIDR(equipment.price_per_day)}
             <span className="text-sm font-medium text-muted-foreground"> / hari</span>
           </p>
           <div className="mt-3">
-            {equipment.stock > 0 ? (
-              <Badge variant="secondary" className="bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                Stok tersedia: {equipment.stock}
-              </Badge>
-            ) : (
-              <Badge variant="destructive">Stok habis</Badge>
-            )}
+            <StockBadge stock={equipment.stock} />
           </div>
           {equipment.description && (
             <div className="mt-5 border-t pt-5">

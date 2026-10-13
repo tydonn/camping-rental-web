@@ -26,14 +26,14 @@ function PaymentChip({ booking }: { booking: Booking }) {
   if (!latest) return null
   if (latest.status === 'rejected') {
     return (
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-red-200 bg-red-100/70 px-2.5 py-0.5 text-[11px] font-bold text-red-700 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-400">
+      <span className="inline-flex w-fit items-center gap-1.5 rounded-[2px] border border-red-300/70 bg-red-50 px-2 py-0.5 font-mono text-[0.6875rem] tracking-[0.1em] text-red-800 uppercase">
         Pembayaran ditolak &mdash; laporkan ulang
       </span>
     )
   }
   if (latest.status === 'pending') {
     return (
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100/70 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-300">
+      <span className="inline-flex w-fit items-center gap-1.5 rounded-[2px] border border-amber-300/70 bg-amber-50 px-2 py-0.5 font-mono text-[0.6875rem] tracking-[0.1em] text-amber-900 uppercase">
         Menunggu verifikasi admin
       </span>
     )
@@ -58,7 +58,7 @@ export default function BookingsPage() {
   return (
     <div>
       <div className="mb-5">
-        <h1 className="text-2xl font-extrabold tracking-tight">Riwayat Booking</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Riwayat Booking</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Semua booking yang pernah Anda buat beserta statusnya.
         </p>
@@ -109,7 +109,7 @@ export default function BookingsPage() {
                 <li key={booking.id}>
                   <Link
                     to={`/booking/riwayat/${booking.id}`}
-                    className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 border-b border-rule py-4 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="space-y-0.5">
                       <span className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
@@ -124,7 +124,7 @@ export default function BookingsPage() {
                       <PaymentChip booking={booking} />
                     </div>
                     <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
-                      <span className="font-extrabold text-primary">
+                      <span className="font-mono tabular-nums">
                         {formatIDR(booking.total_amount)}
                       </span>
                       <BookingBadge status={booking.status} />
