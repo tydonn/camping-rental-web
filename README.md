@@ -1,4 +1,4 @@
-# Camping Rental Web
+# Berkah Alam Outdoor Organizer Web
 
 Frontend SPA (React + Vite + TypeScript) untuk layanan penyewaan alat camping, mengonsumsi [Camping Rental API](../camping-rental-api) (Laravel + Sanctum). UI dibangun dengan **shadcn/ui + Tailwind CSS v4**, tema terracotta, mendukung **dark mode**.
 
