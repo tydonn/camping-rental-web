@@ -57,10 +57,10 @@ export default function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <NavLink to="/">
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+                <span className="grid size-8 shrink-0 place-items-center rounded-[2px] bg-primary text-primary-foreground">
                   <MapPinnedIcon className="size-4" />
                 </span>
-                <span className="font-extrabold tracking-tight">Camping Rental</span>
+                <span className="font-semibold tracking-[-0.02em]">Berkah Alam</span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

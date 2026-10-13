@@ -21,7 +21,7 @@ import AppSidebar from '@/components/AppSidebar'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Toaster } from '@/components/ui/sonner'
 import { PageLoader } from '@/components/shared/page-loader'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { COMPANY_PROFILE } from '@/utils/constants'
 
 const adminTabs = [
   { to: '/admin/equipment', label: 'Alat & Kategori' },
@@ -32,18 +32,18 @@ const adminTabs = [
 
 function navClass({ isActive }: { isActive: boolean }) {
   return [
-    'rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors',
+    'rounded-[2px] px-3.5 py-1.5 text-sm font-medium transition-colors',
     isActive
-      ? 'bg-primary/10 text-primary dark:bg-primary/15'
+      ? 'bg-primary/10 text-primary'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
   ].join(' ')
 }
 
 function tabClass({ isActive }: { isActive: boolean }) {
   return [
-    'whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-colors',
+    'rounded-[2px] px-3.5 py-1.5 text-sm font-medium transition-colors whitespace-nowrap',
     isActive
-      ? 'bg-primary text-primary-foreground shadow-sm'
+      ? 'bg-primary text-primary-foreground'
       : 'text-muted-foreground hover:bg-muted hover:text-foreground',
   ].join(' ')
 }
@@ -72,12 +72,14 @@ export default function Layout() {
           <SidebarTrigger className="md:hidden" />
           <NavLink
             to="/"
-            className={`flex shrink-0 items-center gap-2 font-extrabold tracking-tight ${isMobile ? '' : 'mr-2'}`}
+            className={`flex shrink-0 items-center gap-2 font-semibold tracking-[-0.02em] ${isMobile ? '' : 'mr-2'}`}
           >
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+            <span className="grid size-8 shrink-0 place-items-center rounded-[2px] bg-primary text-primary-foreground">
               <MapPinnedIcon className="size-4" />
             </span>
-            <span className="hidden min-[380px]:inline">Camping Rental</span>
+            <span className="hidden min-[420px]:inline lg:inline">
+              {COMPANY_PROFILE.name}
+            </span>
           </NavLink>
 
           {!isMobile && (
@@ -102,12 +104,11 @@ export default function Layout() {
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
-            <ThemeToggle />
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 pl-1.5">
-                    <span className="grid size-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    <span className="grid size-7 place-items-center rounded-[2px] bg-primary font-mono text-[0.6875rem] font-medium text-primary-foreground">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                     <span className="hidden max-w-28 truncate text-sm font-semibold sm:inline">
@@ -128,7 +129,7 @@ export default function Layout() {
                       <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                         <Badge
                           variant="outline"
-                          className="border-sky-200 bg-sky-100/70 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300"
+                          className="border-rule font-mono text-[0.6875rem] tracking-[0.1em] text-muted-foreground uppercase"
                         >
                           Admin
                         </Badge>
@@ -156,7 +157,7 @@ export default function Layout() {
 
         {!isMobile && user?.role === 'admin' && location.pathname.startsWith('/admin') && (
           <nav
-            className="flex items-center justify-center gap-1 border-b bg-muted/40 px-4 py-1.5"
+            className="flex items-center justify-center gap-1 border-b bg-rule px-4 py-1.5 sm:pl-12"
             aria-label="Navigasi admin"
           >
             {adminTabs.map((tab) => (
@@ -176,15 +177,21 @@ export default function Layout() {
           className={
             location.pathname === '/'
               ? 'w-full flex-1'
-              : 'mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6'
+              : 'relative mx-auto w-full max-w-6xl flex-1 pr-4 py-6 pl-8 sm:pr-6 sm:pl-12'
           }
         >
+          {location.pathname !== '/' && (
+            <div
+              aria-hidden="true"
+              className="rule-draw-y absolute inset-y-0 left-4 w-px bg-primary sm:left-6"
+            />
+          )}
           <Outlet />
         </main>
 
-        <footer className="border-t bg-card">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4 text-sm text-muted-foreground sm:px-6">
-            <p>Camping Rental &mdash; sewa alat camping dengan mudah.</p>
+        <footer className="border-t">
+          <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 py-4 pr-4 pl-8 text-sm text-muted-foreground sm:pr-6 sm:pl-12">
+            <p>{COMPANY_PROFILE.name}. Sewa alat camping dengan mudah.</p>
             <Separator orientation="vertical" className="hidden h-4 sm:block" />
             <p>&copy; {new Date().getFullYear()}</p>
           </div>
