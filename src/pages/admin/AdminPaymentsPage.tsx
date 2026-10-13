@@ -5,6 +5,16 @@ import { listAdminPayments, rejectPayment, verifyPayment } from '@/api/admin'
 import { toApiError } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { EmptyState } from '@/components/shared/empty-state'
 import { DataPagination } from '@/components/shared/data-pagination'
 import { PageLoader } from '@/components/shared/page-loader'
@@ -27,6 +37,7 @@ export default function AdminPaymentsPage() {
   const [tick, setTick] = useState(0)
 
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<Payment | null>(null)
 
   const query = useApiQuery<Paginated<Payment>>(
     () =>
@@ -55,6 +66,7 @@ export default function AdminPaymentsPage() {
   }
 
   const handleReject = async (payment: Payment) => {
+    setRejectTarget(null)
     setBusyId(payment.id)
     try {
       await rejectPayment(payment.id)
@@ -70,7 +82,7 @@ export default function AdminPaymentsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">Verifikasi Pembayaran</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Verifikasi Pembayaran</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Periksa laporan pembayaran pelanggan. Verifikasi akan mengubah booking menjadi{' '}
           <strong>Dibayar</strong>.
@@ -101,23 +113,22 @@ export default function AdminPaymentsPage() {
         </Button>
       </div>
 
-      {query.error && (
-        <Alert variant="destructive" className="mb-4">
-          <CircleAlertIcon />
-          <AlertDescription>{query.error}</AlertDescription>
-        </Alert>
-      )}
 
       {query.loadingFirst ? (
         <PageLoader label="Memuat daftar pembayaran..." />
-      ) : !query.error && payments.length === 0 ? (
+      ) : query.error ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertDescription>{query.error}</AlertDescription>
+        </Alert>
+      ) : payments.length === 0 ? (
         <EmptyState
           title="Tidak ada pembayaran"
           description="Belum ada laporan pembayaran dengan filter ini."
         />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+          <div className="overflow-x-auto border border-rule">
             <table className="w-full min-w-[800px] text-sm">
               <thead>
                 <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -158,7 +169,7 @@ export default function AdminPaymentsPage() {
                               <span className="hidden sm:inline">Verifikasi</span>
                               <span className="sm:hidden">OK</span>
                             </Button>
-                            <Button variant="destructive" size="sm" className="px-2 sm:px-4" onClick={() => void handleReject(payment)}>
+                            <Button variant="destructive" size="sm" className="px-2 sm:px-4" onClick={() => setRejectTarget(payment)}>
                               <CircleXIcon data-icon="inline-start" className="sm:hidden" />
                               Tolak
                             </Button>
@@ -180,6 +191,33 @@ export default function AdminPaymentsPage() {
           />
         </>
       )}
+
+      <AlertDialog open={rejectTarget !== null} onOpenChange={(open) => !open && setRejectTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tolak pembayaran ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Pembayaran {rejectTarget?.id} untuk booking {rejectTarget?.booking_id} sebesar{' '}
+              {rejectTarget ? formatIDR(rejectTarget.amount) : ''} akan ditolak. Booking
+              dikeluarkan dari status &ldquo;Dibayar&rdquo; dan pelanggan harus melaporkan ulang.
+              Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              disabled={busyId !== null}
+              onClick={(event) => {
+                event.preventDefault()
+                if (rejectTarget) void handleReject(rejectTarget)
+              }}
+            >
+              {busyId !== null ? 'Menolak...' : 'Tolak Pembayaran'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -14,6 +14,16 @@ import { toApiError } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -42,6 +52,9 @@ export default function AdminBookingsPage() {
   const [tick, setTick] = useState(0)
 
   const [busyBookingId, setBusyBookingId] = useState<number | null>(null)
+  const [actionTarget, setActionTarget] = useState<{ booking: Booking; kind: 'pickup' | 'return' } | null>(
+    null,
+  )
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null)
 
   const query = useApiQuery<Paginated<Booking>>(
@@ -56,6 +69,7 @@ export default function AdminBookingsPage() {
   const bookings = query.data?.data ?? []
 
   const handleConfirmPickup = async (booking: Booking) => {
+    setActionTarget(null)
     setBusyBookingId(booking.id)
     try {
       await confirmPickup(booking.id)
@@ -69,6 +83,7 @@ export default function AdminBookingsPage() {
   }
 
   const handleProcessReturn = async (booking: Booking) => {
+    setActionTarget(null)
     setBusyBookingId(booking.id)
     try {
       await processReturn(booking.id)
@@ -84,7 +99,7 @@ export default function AdminBookingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">Kelola Booking</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Kelola Booking</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Konfirmasi peminjaman untuk booking berstatus <strong>Dibayar</strong>, dan proses
           pengembalian untuk yang sedang dipinjam.
@@ -115,20 +130,19 @@ export default function AdminBookingsPage() {
         </Button>
       </div>
 
-      {query.error && (
-        <Alert variant="destructive" className="mb-4">
-          <CircleAlertIcon />
-          <AlertDescription>{query.error}</AlertDescription>
-        </Alert>
-      )}
 
       {query.loadingFirst ? (
         <PageLoader label="Memuat daftar booking..." />
-      ) : !query.error && bookings.length === 0 ? (
+      ) : query.error ? (
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertDescription>{query.error}</AlertDescription>
+        </Alert>
+      ) : bookings.length === 0 ? (
         <EmptyState title="Tidak ada booking" description="Belum ada booking dengan filter ini." />
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+          <div className="overflow-x-auto border border-rule">
             <table className="w-full min-w-[780px] text-sm">
               <thead>
                 <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -190,13 +204,13 @@ export default function AdminBookingsPage() {
                         {busyBookingId === booking.id ? (
                           <span className="text-xs text-muted-foreground">Memproses...</span>
                         ) : booking.status === 'paid' ? (
-                          <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => void handleConfirmPickup(booking)}>
+                          <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => setActionTarget({ booking, kind: 'pickup' })}>
                             <PackageCheckIcon data-icon="inline-start" className="sm:hidden" />
                             <span className="hidden sm:inline">Konfirmasi Pengambilan</span>
                             <span className="sm:hidden">Ambil</span>
                           </Button>
                         ) : booking.status === 'confirmed' ? (
-                          <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => void handleProcessReturn(booking)}>
+                          <Button size="sm" className="gap-1.5 px-2 sm:px-4" onClick={() => setActionTarget({ booking, kind: 'return' })}>
                             <CheckCheckIcon data-icon="inline-start" className="sm:hidden" />
                             <span className="hidden sm:inline">Proses Pengembalian</span>
                             <span className="sm:hidden">Kembali</span>
@@ -275,6 +289,40 @@ export default function AdminBookingsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={actionTarget !== null}
+        onOpenChange={(open) => !open && setActionTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionTarget?.kind === 'pickup'
+                ? 'Konfirmasi pengambilan alat?'
+                : 'Konfirmasi pengembalian alat?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionTarget?.kind === 'pickup'
+                ? `Stok alat pada booking ${actionTarget?.booking.id} akan dikurangi. Pelanggan dianggap sudah mengambil alat.`
+                : `Stok alat pada booking ${actionTarget?.booking.id} akan dikembalikan. Tandai hanya setelah alat benar-benar diterima.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busyBookingId !== null}
+              onClick={(event) => {
+                event.preventDefault()
+                if (!actionTarget) return
+                if (actionTarget.kind === 'pickup') void handleConfirmPickup(actionTarget.booking)
+                else void handleProcessReturn(actionTarget.booking)
+              }}
+            >
+              {busyBookingId !== null ? 'Memproses...' : 'Ya, lanjutkan'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

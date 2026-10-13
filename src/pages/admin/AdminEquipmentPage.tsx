@@ -245,7 +245,7 @@ export default function AdminEquipmentPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight">Kelola Alat &amp; Kategori</h1>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Kelola Alat &amp; Kategori</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           Tambahkan, ubah, dan hapus kategori serta alat sewa.
         </p>
@@ -265,7 +265,7 @@ export default function AdminEquipmentPage() {
                 </Alert>
               )}
 
-              <ul className="divide-y rounded-lg border">
+              <ul className="divide-y divide-rule border border-rule">
                 {categories.map((category) =>
                   editingCategoryId === category.id ? (
                     <li key={category.id} className="p-2">
@@ -374,11 +374,11 @@ export default function AdminEquipmentPage() {
                 {items.map((equipment) => (
                   <li
                     key={equipment.id}
-                    className="flex items-start gap-3 rounded-xl border bg-card p-3 shadow-sm"
+                    className="flex items-start gap-3 border-b border-rule p-3"
                   >
                     <EquipmentPhoto
                       equipment={equipment}
-                      className="h-14 w-14 shrink-0 rounded-lg border bg-muted/40"
+                      className="size-14 shrink-0 border border-rule bg-muted"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
@@ -422,7 +422,7 @@ export default function AdminEquipmentPage() {
                 ))}
               </ul>
 
-              <div className="hidden overflow-x-auto rounded-xl border bg-card shadow-sm md:block">
+              <div className="hidden overflow-x-auto border border-rule md:block">
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className="bg-muted/60 text-left text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -440,7 +440,7 @@ export default function AdminEquipmentPage() {
                         <td className="px-4 py-2.5">
                           <EquipmentPhoto
                             equipment={equipment}
-                            className="size-11 rounded-lg border bg-muted/40"
+                            className="size-11 border border-rule bg-muted"
                           />
                         </td>
                         <td className="px-4 py-2.5 font-semibold">{equipment.name}</td>
