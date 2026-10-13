@@ -7,6 +7,21 @@ export interface SiteSettings {
   hero_image: string | null
   /** Alamat/query lokasi untuk embed Google Maps di landing page */
   maps_query: string | null
+  /** Alamat posisipiyang ditampilkan di bawah peta. Boleh berbeda dari maps_query */
+  address: string | null
+  /** Nomor telepon / WhatsApp, maksimal 20 karakter */
+  phone: string | null
+  email: string | null
+  /** Jam operasional sebagai teks bebas, maksimal 120 karakter */
+  hours: string | null
+}
+
+/** Payload untuk POST /admin/settings/contact. Semua field opsional; null berarti kosongkan. */
+export interface ContactSettingsPayload {
+  address?: string | null
+  phone?: string | null
+  email?: string | null
+  hours?: string | null
 }
 
 export interface User {

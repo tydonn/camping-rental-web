@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { SiteSettings } from '../types'
+import type { ContactSettingsPayload, SiteSettings } from '../types'
 
 export async function getSettings(): Promise<SiteSettings> {
   const response = await api.get<{ data: SiteSettings }>('/settings')
@@ -27,5 +27,17 @@ export async function updateMapsQuery(query: string): Promise<SiteSettings> {
 /** Reset lokasi peta ke fallback bawaan aplikasi. */
 export async function deleteMapsQuery(): Promise<SiteSettings> {
   const response = await api.delete<{ data: SiteSettings }>('/admin/settings/maps-query')
+  return response.data.data
+}
+
+/** Simpan data kontak yang tampil di bawah peta pada landing page. */
+export async function updateContact(payload: ContactSettingsPayload): Promise<SiteSettings> {
+  const response = await api.post<{ data: SiteSettings }>('/admin/settings/contact', payload)
+  return response.data.data
+}
+
+/** Kosongkan data kontak agar frontend kembali memakai nilai bawaannya. */
+export async function deleteContact(): Promise<SiteSettings> {
+  const response = await api.delete<{ data: SiteSettings }>('/admin/settings/contact')
   return response.data.data
 }
