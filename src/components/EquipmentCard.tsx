@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom'
 import type { Equipment } from '@/types'
 import { formatIDR, resolvePhotoUrl } from '@/utils/format'
-import { Badge } from '@/components/ui/badge'
 import { TentIcon } from 'lucide-react'
+import { StockBadge } from '@/components/shared/status-badges'
 
+/**
+ * Kartu katalog sebagai field ber garis. Tanpa shadow, tanpa hover lift:
+ * Elevasi datang dari garis, bukan dari bayangan.
+ */
 export function EquipmentPhoto({
   equipment,
-  className = 'aspect-[4/3] rounded-t-xl',
+  className = 'aspect-[4/3]',
 }: {
   equipment: Equipment
   className?: string
@@ -15,10 +19,10 @@ export function EquipmentPhoto({
   if (!url) {
     return (
       <div
-        className={`flex items-center justify-center bg-primary/10 text-primary ${className}`}
+        className={`flex items-center justify-center bg-muted text-rule-strong ${className}`}
         aria-hidden="true"
       >
-        <TentIcon className="size-9 opacity-70" />
+        <TentIcon className="size-8 opacity-70" />
       </div>
     )
   }
@@ -37,28 +41,27 @@ export default function EquipmentCard({ equipment }: { equipment: Equipment }) {
   return (
     <Link
       to={`/katalog/${equipment.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      className="group flex flex-col overflow-hidden border border-rule transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <EquipmentPhoto equipment={equipment} className="aspect-[4/3]" />
-      <div className="flex flex-1 flex-col gap-1 p-3.5">
+      <EquipmentPhoto equipment={equipment} />
+
+      <div className="flex flex-1 flex-col border-t border-rule p-3.5">
         {equipment.category && (
-          <span className="w-fit rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-bold text-secondary-foreground">
+          <p className="font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
             {equipment.category.name}
-          </span>
+          </p>
         )}
-        <h3 className="font-semibold leading-snug">{equipment.name}</h3>
-        <p className="text-sm font-bold text-primary">
-          {formatIDR(equipment.price_per_day)}
-          <span className="text-xs font-medium text-muted-foreground"> / hari</span>
+        <h3 className="mt-1 text-sm leading-snug font-medium group-hover:text-primary">
+          {equipment.name}
+        </h3>
+
+        <p className="mt-3 font-mono text-sm tabular-nums">{formatIDR(equipment.price_per_day)}</p>
+        <p className="font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
+          per hari
         </p>
-        <div className="mt-auto pt-2">
-          {equipment.stock > 0 ? (
-            <Badge variant="secondary" className="bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-              Stok {equipment.stock}
-            </Badge>
-          ) : (
-            <Badge variant="destructive">Stok habis</Badge>
-          )}
+
+        <div className="mt-4">
+          <StockBadge stock={equipment.stock} />
         </div>
       </div>
     </Link>

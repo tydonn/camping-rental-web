@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRightIcon,
-  BadgeCheckIcon,
   CircleAlertIcon,
-  ClockIcon,
-  LifeBuoyIcon,
   MailIcon,
   MapPinIcon,
+  MapPinnedIcon,
   PhoneIcon,
-  SparklesIcon,
+  ClockIcon,
   TentIcon,
 } from 'lucide-react'
 import { listCategoriesForFilter, listEquipment } from '@/api/catalog'
@@ -17,35 +15,39 @@ import { getSettings } from '@/api/settings'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card, CardContent } from '@/components/ui/card'
-import EquipmentCard from '@/components/EquipmentCard'
 import { EmptyState } from '@/components/shared/empty-state'
+import { LedgerLabel, Rule, Sheet } from '@/components/shared/ledger'
 import { useApiQuery } from '@/hooks/useApiQuery'
+import { useLedgerDraw } from '@/hooks/useLedgerDraw'
 import type { Category, Equipment, Paginated, SiteSettings } from '@/types'
-import { resolvePhotoUrl } from '@/utils/format'
+import { formatIDR, resolvePhotoUrl } from '@/utils/format'
 import { buildMapsEmbedUrl } from '@/utils/maps'
 import { COMPANY_PROFILE } from '@/utils/constants'
 
 const valueProps = [
   {
-    icon: SparklesIcon,
-    title: 'Alat Terawat',
-    description: 'Disanitasi dan dicek kesiapannya sebelum tiap peminjaman.',
+    title: 'Alat terawat',
+    description: 'Setiap tenda disanitasi dan dicek ulang sebelum keluar dari gudang.',
   },
   {
-    icon: BadgeCheckIcon,
-    title: 'Harga Transparan',
-    description: 'Total biaya dihitung otomatis tanpa biaya tersembunyi.',
+    title: 'Harga transparan',
+    description: 'Total biaya dihitung otomatis, jadi tidak ada biaya tersembunyi di akhir.',
   },
   {
-    icon: LifeBuoyIcon,
-    title: 'Tim Siap Bantu',
-    description: 'Respon cepat melalui telepon maupun pesan selama jam operasional.',
+    title: 'Tim siap bantu',
+    description: 'Hubungi kami lewat telepon atau WhatsApp selama jam operasional.',
   },
 ] as const
 
+/** Fallback per field ke konstanta, supaya backend yang kosong tidak merusak tampilan. */
+function contactValue(value: string | null | undefined, fallback: string): string {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : fallback
+}
+
 export default function LandingPage() {
   const [heroFailed, setHeroFailed] = useState(false)
+  const sheetRef = useLedgerDraw<HTMLDivElement>()
 
   const settingsQuery = useApiQuery<SiteSettings>(() => getSettings(), [])
   const categoriesQuery = useApiQuery<Category[]>(
@@ -59,201 +61,170 @@ export default function LandingPage() {
 
   const heroUrl = resolvePhotoUrl(settingsQuery.data?.hero_image ?? null)
   const showHeroImage = Boolean(heroUrl) && !heroFailed
-  const mapsEmbedUrl = buildMapsEmbedUrl(settingsQuery.data?.maps_query ?? '')
+
+  const address = contactValue(settingsQuery.data?.address, COMPANY_PROFILE.address)
+  const hours = contactValue(settingsQuery.data?.hours, COMPANY_PROFILE.hours)
+  const phone = contactValue(settingsQuery.data?.phone, COMPANY_PROFILE.phone)
+  const email = contactValue(settingsQuery.data?.email, COMPANY_PROFILE.email)
+
+  const mapsEmbedUrl = buildMapsEmbedUrl(settingsQuery.data?.maps_query ?? '', address)
+
+  const contactDetails = [
+    { icon: MapPinIcon, label: 'Alamat', value: address, href: null },
+    { icon: ClockIcon, label: 'Jam operasional', value: hours, href: null },
+    { icon: PhoneIcon, label: 'Telepon / WhatsApp', value: phone, href: `tel:${phone.replace(/[^+\d]/g, '')}` },
+    { icon: MailIcon, label: 'Email', value: email, href: `mailto:${email}` },
+  ]
+
   const categories = (categoriesQuery.data ?? []).slice(0, 8)
   const featuredItems = featuredQuery.data?.data ?? []
 
   return (
-    <div>
-      <section className="relative isolate flex flex-col overflow-hidden bg-background" aria-label="Beranda">
-        <div className="flex flex-1 items-center">
-          <div className="grid w-full grid-cols-1 items-center gap-6 lg:grid-cols-2 lg:gap-8">
-            <div className="relative isolate flex items-center justify-center overflow-visible px-4 pb-6 sm:px-6 lg:order-1 lg:px-8 lg:py-12 xl:pr-12">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -z-10 size-72 rounded-full bg-primary/20 blur-3xl lg:size-80 -right-6 -top-6"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -z-10 size-72 rounded-full bg-primary/20 blur-3xl lg:size-80 -bottom-6 -left-6"
-              />
-              <div className="relative w-full max-w-[520px] overflow-hidden rounded-2xl shadow-lg ring-1 ring-border">
-                <div className="aspect-square w-full bg-muted">
-                  {showHeroImage ? (
-                    <img
-                      src={heroUrl ?? undefined}
-                      alt="Hero camping"
-                      className="h-full w-full object-cover object-center"
-                      onError={() => setHeroFailed(true)}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <TentIcon aria-hidden="true" className="size-24 rotate-6 text-muted-foreground/30 sm:size-32" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+    <div ref={sheetRef}>
+      <Sheet className="pt-16 pb-14 sm:pt-20 sm:pb-20">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-14">
+          <div className="lg:col-span-7">
+            <h1 className="max-w-[20ch] text-[2.5rem] leading-[1.02] font-semibold tracking-[-0.025em] text-balance md:text-5xl lg:text-6xl">
+              Sewa alat camping, siap berangkat pagi ini
+            </h1>
 
-            <div className="flex items-center justify-center px-4 py-8 sm:px-6 lg:order-2 lg:justify-center lg:px-12 lg:py-20 xl:px-16">
-              <div className="flex w-full max-w-[520px] flex-col items-start justify-center gap-5 py-4 lg:py-0">
-                <span className="rounded-full border bg-muted px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Sewa alat camping mudah &amp; cepat
-                </span>
-                <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
-                  PETUALANGAN ALAM DIMULAI DARI PERLENGKAPAN YANG TEPAT
-                </h1>
-                <p className="text-md leading-relaxed text-muted-foreground">
-                  Tenda, carrier, sleeping bag, hingga perlengkapan outdoor lainnya siap disewa
-                  dengan harga bersahabat. Booking online, bayar, lalu ambil di lokasi — kami
-                  urus sisanya.
-                </p>
-                <Button size="lg" asChild className="mt-1">
-                  <Link to="/katalog">
-                    Lihat Katalog
-                    <ArrowRightIcon data-icon="inline-end" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+            <p className="mt-6 max-w-[62ch] text-base leading-relaxed text-muted-foreground md:text-lg">
+              Tenda, carrier, sleeping bag, dan perlengkapan outdoor lainnya. Dicek dan
+              dibersihkan dulu, lalu bisa langsung Anda bawa.
+            </p>
 
-        <div className="border-t bg-muted/40">
-          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-4 py-3 text-xs font-semibold text-muted-foreground sm:justify-between sm:px-6 sm:text-sm">
-            <span className="inline-flex items-center gap-1.5">
-              <BadgeCheckIcon className="size-4 text-primary" aria-hidden="true" /> 500+ Penyewa Puas
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <SparklesIcon className="size-4 text-primary" aria-hidden="true" /> Alat Terawat &amp; Bersih
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <ClockIcon className="size-4 text-primary" aria-hidden="true" /> Booking Online 24 Jam
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <LifeBuoyIcon className="size-4 text-primary" aria-hidden="true" /> Support Cepat
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <div className="mx-auto w-full max-w-6xl space-y-14 px-4 pb-16 pt-12 sm:px-6 sm:pt-16">
-        <section aria-label="Tentang kami">
-          <div className="grid items-start gap-8 lg:grid-cols-2">
-            <div>
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary dark:bg-primary/15">
-                Tentang Kami
-              </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight sm:text-3xl">
-                {COMPANY_PROFILE.name} &mdash; Rekan Petualangan Anda di Lembang
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                {COMPANY_PROFILE.description}
-              </p>
-
-              <ul className="mt-6 grid gap-3 sm:grid-cols-3">
-                {valueProps.map((prop) => (
-                  <li key={prop.title} className="rounded-xl border bg-card p-4 shadow-sm">
-                    <prop.icon className="size-5 text-primary" aria-hidden="true" />
-                    <h3 className="mt-2 text-sm font-bold">{prop.title}</h3>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {prop.description}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="space-y-3.5 text-sm">
-                  <div className="flex items-start gap-3">
-                    <MapPinIcon className="mt-0.5 size-4.5 shrink-0 text-primary" aria-hidden="true" />
-                    <div>
-                      <h3 className="font-bold">Alamat</h3>
-                      <p className="mt-0.5 leading-relaxed text-muted-foreground">
-                        {COMPANY_PROFILE.address}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <ClockIcon className="mt-0.5 size-4.5 shrink-0 text-primary" aria-hidden="true" />
-                    <div>
-                      <h3 className="font-bold">Jam Operasional</h3>
-                      <p className="mt-0.5 text-muted-foreground">{COMPANY_PROFILE.hours}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <PhoneIcon className="mt-0.5 size-4.5 shrink-0 text-primary" aria-hidden="true" />
-                    <div>
-                      <h3 className="font-bold">Telepon / WhatsApp</h3>
-                      <a
-                        href={`tel:${COMPANY_PROFILE.phone.replace(/[^+\d]/g, '')}`}
-                        className="mt-0.5 block text-muted-foreground hover:text-primary hover:underline"
-                      >
-                        {COMPANY_PROFILE.phone}
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MailIcon className="mt-0.5 size-4.5 shrink-0 text-primary" aria-hidden="true" />
-                    <div>
-                      <h3 className="font-bold">Email</h3>
-                      <a
-                        href={`mailto:${COMPANY_PROFILE.email}`}
-                        className="mt-0.5 block text-muted-foreground hover:text-primary hover:underline"
-                      >
-                        {COMPANY_PROFILE.email}
-                      </a>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <iframe
-                title={`Peta lokasi ${COMPANY_PROFILE.name}`}
-                src={mapsEmbedUrl}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-                className="h-64 w-full rounded-xl border bg-muted shadow-sm sm:h-72"
-              />
-            </div>
-          </div>
-        </section>
-
-        {categories.length > 0 && (
-          <section aria-label="Kategori populer">
-            <h2 className="mb-3 text-lg font-extrabold tracking-tight">Kategori Populer</h2>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <Link
-                  key={category.id}
-                  to={`/katalog?category_id=${category.id}`}
-                  className="rounded-full border bg-card px-4 py-2 text-sm font-semibold shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-                >
-                  {category.name}
+            <div className="-ml-4 mt-9 flex flex-wrap items-center gap-3 sm:-ml-6">
+              <Button
+                size="lg"
+                asChild
+                className="h-12 rounded-[2px] px-6 text-base has-data-[icon=inline-end]:pr-6"
+              >
+                <Link to="/katalog">
+                  Lihat Katalog
+                  <ArrowRightIcon data-icon="inline-end" />
                 </Link>
-              ))}
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="h-12 rounded-[2px] px-6 text-base has-data-[icon=inline-start]:pl-6"
+              >
+                <a href="#lokasi">
+                  <MapPinnedIcon data-icon="inline-start" />
+                  Lihat lokasi
+                </a>
+              </Button>
             </div>
-          </section>
-        )}
-
-        <section aria-label="Katalog unggulan">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-extrabold tracking-tight">Katalog Unggulan</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/katalog">
-                Lihat Semua
-                <ArrowRightIcon data-icon="inline-end" />
-              </Link>
-            </Button>
           </div>
 
+          <div className="lg:col-span-5">
+            <div className="border border-rule">
+              {showHeroImage ? (
+                <img
+                  src={heroUrl ?? undefined}
+                  alt="Tenda camping siap disewa di Lembang"
+                  className="aspect-[4/3] w-full object-cover sm:aspect-[16/10]"
+                  onError={() => setHeroFailed(true)}
+                />
+              ) : (
+                <div className="flex aspect-[4/3] w-full flex-col justify-between gap-8 p-6 sm:aspect-[16/10] sm:p-8">
+                  <TentIcon className="size-8 text-muted-foreground" aria-hidden="true" />
+                  <p className="font-mono text-lg tracking-tight text-muted-foreground">
+                    {COMPANY_PROFILE.name}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </Sheet>
+
+      <Sheet className="border-t border-rule py-16 md:py-24">
+        <div className="grid grid-cols-1 gap-x-16 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <h2 className="max-w-[18ch] text-2xl leading-[1.1] font-semibold tracking-[-0.02em] text-balance md:text-3xl">
+              Sewa lebih hemat daripada membeli sendiri
+            </h2>
+            <p className="mt-5 max-w-[60ch] text-base leading-relaxed text-muted-foreground">
+              {COMPANY_PROFILE.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-12">
+          <Rule />
+          {valueProps.map((prop) => (
+            <div key={prop.title}>
+              <Rule />
+              <div className="grid grid-cols-1 gap-x-16 gap-y-2 py-6 lg:grid-cols-12">
+                <h3 className="text-base font-semibold lg:col-span-4">{prop.title}</h3>
+                <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground lg:col-span-7 lg:col-start-6">
+                  {prop.description}
+                </p>
+              </div>
+            </div>
+          ))}
+          <Rule />
+        </div>
+      </Sheet>
+
+      {categories.length > 0 && (
+        <Sheet className="border-t border-rule py-14 md:py-16">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em] md:text-3xl">
+            Cari per kategori
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-muted-foreground">
+            Pilih satu kategori untuk langsung menyaring katalog dan mengecek ketersediaan
+            untuk tanggal yang Anda rencanakan.
+          </p>
+
+          <Rule className="mt-8" />
+          <div className="flex flex-wrap">
+            {categories.map((category, index) => (
+              <Link
+                key={category.id}
+                to={`/katalog?category_id=${category.id}`}
+                className={`group flex items-baseline gap-2 py-3.5 pr-6 transition-colors hover:text-primary focus-visible:outline-none ${
+                  index > 0 ? 'border-rule sm:border-l sm:pl-6' : ''
+                }`}
+              >
+                <span className="text-sm font-medium">{category.name}</span>
+                {typeof category.equipment_count === 'number' && (
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {String(category.equipment_count).padStart(2, '0')}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+          <Rule />
+        </Sheet>
+      )}
+
+      <Sheet className="border-t border-rule py-16 md:py-24">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em] md:text-3xl">
+            Katalog unggulan
+          </h2>
+          <Button
+            variant="link"
+            size="sm"
+            asChild
+            className="h-auto rounded-[2px] p-0 font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          >
+            <Link to="/katalog">
+              Lihat semua
+              <ArrowRightIcon data-icon="inline-end" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="mt-10">
           {featuredQuery.loadingFirst ? (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div className="space-y-px">
               {Array.from({ length: 8 }).map((_, index) => (
-                <Skeleton key={index} className="h-64 rounded-xl" />
+                <Skeleton key={index} className="h-[5.5rem] rounded-none" />
               ))}
             </div>
           ) : featuredQuery.error ? (
@@ -267,14 +238,117 @@ export default function LandingPage() {
               description="Alat sewa akan tampil di sini setelah ditambahkan admin."
             />
           ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {featuredItems.map((equipment) => (
-                <EquipmentCard key={equipment.id} equipment={equipment} />
-              ))}
+            <div>
+              <div className="hidden grid-cols-[1fr_9rem_7rem] gap-6 pb-3 sm:grid">
+                <LedgerLabel>Nama alat</LedgerLabel>
+                <LedgerLabel className="text-right">Harga / hari</LedgerLabel>
+                <LedgerLabel className="text-right">Stok</LedgerLabel>
+              </div>
+              <Rule />
+              {featuredItems.map((equipment) => {
+                const photoUrl = resolvePhotoUrl(equipment.photo)
+                return (
+                  <Link
+                    key={equipment.id}
+                    to={`/katalog/${equipment.id}`}
+                    className="group grid grid-cols-[3rem_1fr_auto] items-center gap-x-4 py-4 transition-colors hover:bg-accent/40 focus-visible:outline-none sm:grid-cols-[3rem_1fr_9rem_7rem] sm:gap-x-6"
+                  >
+                    <div className="size-12 overflow-hidden border border-rule bg-muted">
+                      {photoUrl ? (
+                        <img
+                          src={photoUrl}
+                          alt={equipment.name}
+                          loading="lazy"
+                          className="size-full object-cover"
+                          onError={(event) => event.currentTarget.classList.add('hidden')}
+                        />
+                      ) : (
+                        <TentIcon className="size-full p-2.5 text-muted-foreground" aria-hidden="true" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium group-hover:text-primary">
+                        {equipment.name}
+                      </p>
+                      {equipment.category && (
+                        <p className="mt-0.5 font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
+                          {equipment.category.name}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="col-start-3 flex flex-col items-end gap-0.5 sm:contents">
+                      <p className="font-mono text-sm tabular-nums sm:text-right">
+                        {formatIDR(equipment.price_per_day)}
+                      </p>
+                      <p
+                        className={`font-mono text-xs tabular-nums sm:text-right ${
+                          equipment.stock > 0 ? 'text-muted-foreground' : 'text-primary'
+                        }`}
+                      >
+                        {equipment.stock > 0
+                          ? `${String(equipment.stock).padStart(2, '0')} tersedia`
+                          : 'Kosong'}
+                      </p>
+                    </div>
+
+                    <Rule className="col-span-full" />
+                  </Link>
+                )
+              })}
             </div>
           )}
-        </section>
-      </div>
+        </div>
+      </Sheet>
+
+      <Sheet className="border-t border-rule py-16 md:py-24">
+        <div id="lokasi" className="scroll-mt-20">
+          <h2 className="text-2xl font-semibold tracking-[-0.02em] md:text-3xl">
+            Lokasi dan kontak
+          </h2>
+          <p className="mt-3 max-w-[62ch] text-sm leading-relaxed text-muted-foreground">
+            Kunjungi kami di Lembang, Kabupaten Bandung Barat. Telepon atau WhatsApp dulu
+            untuk memastikan stok tersedia di tanggal yang Anda rencanakan.
+          </p>
+        </div>
+
+        <div className="mt-10 border border-rule bg-muted">
+          <iframe
+            title={`Peta lokasi ${COMPANY_PROFILE.name}`}
+            src={mapsEmbedUrl}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+            className="h-[340px] w-full bg-muted sm:h-[440px] lg:h-[500px]"
+          />
+        </div>
+
+        <dl className="mt-10">
+          <Rule />
+          {contactDetails.map((detail) => (
+            <div key={detail.label}>
+              <Rule />
+              <div className="grid grid-cols-1 gap-2 py-6 sm:grid-cols-[minmax(0,13rem)_1fr] sm:gap-8">
+                <dt className="flex items-center gap-2 font-mono text-[0.6875rem] tracking-[0.14em] text-muted-foreground uppercase">
+                  <detail.icon className="size-3.5 shrink-0" aria-hidden="true" />
+                  {detail.label}
+                </dt>
+                <dd className="max-w-[52ch] text-sm leading-relaxed">
+                  {detail.href ? (
+                    <a href={detail.href} className="transition-colors hover:text-primary">
+                      {detail.value}
+                    </a>
+                  ) : (
+                    detail.value
+                  )}
+                </dd>
+              </div>
+            </div>
+          ))}
+          <Rule />
+        </dl>
+      </Sheet>
     </div>
   )
 }
