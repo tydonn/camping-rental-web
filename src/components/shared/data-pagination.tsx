@@ -1,8 +1,9 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination'
 import { cn } from '@/lib/utils'
+import { Figure } from '@/components/shared/ledger'
 
+/** Navigasi halaman sebagai baris ledger: angka mono, state aktif memakai aksen. */
 export function DataPagination({
   page,
   lastPage,
@@ -20,46 +21,45 @@ export function DataPagination({
   for (let i = from; i <= to; i += 1) pages.push(i)
 
   return (
-    <Pagination className="mt-6">
-      <PaginationContent>
-        <PaginationItem>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => onChange(page - 1)}
-            aria-label="Halaman sebelumnya"
-          >
-            <ChevronLeftIcon data-icon="inline-start" />
-            Sebelumnya
-          </Button>
-        </PaginationItem>
+    <nav className="mt-8 flex flex-wrap items-center gap-2 border-t border-rule pt-5" aria-label="Navigasi halaman">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+        aria-label="Halaman sebelumnya"
+      >
+        <ChevronLeftIcon data-icon="inline-start" />
+        Sebelumnya
+      </Button>
+
+      <div className="flex items-center gap-1">
         {pages.map((number) => (
-          <PaginationItem key={number}>
+          <div key={number}>
             <Button
               variant={number === page ? 'default' : 'ghost'}
               size="icon-sm"
               aria-current={number === page ? 'page' : undefined}
+              aria-label={`Halaman ${number}`}
               onClick={() => onChange(number)}
-              className={cn(number !== page && 'text-muted-foreground')}
+              className={cn('font-mono tabular-nums', number !== page && 'text-muted-foreground')}
             >
-              {number}
+              <Figure>{String(number).padStart(2, '0')}</Figure>
             </Button>
-          </PaginationItem>
+          </div>
         ))}
-        <PaginationItem>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= lastPage}
-            onClick={() => onChange(page + 1)}
-            aria-label="Halaman berikutnya"
-          >
-            Berikutnya
-            <ChevronRightIcon data-icon="inline-end" />
-          </Button>
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+      </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={page >= lastPage}
+        onClick={() => onChange(page + 1)}
+        aria-label="Halaman berikutnya"
+      >
+        Berikutnya
+        <ChevronRightIcon data-icon="inline-end" />
+      </Button>
+    </nav>
   )
 }

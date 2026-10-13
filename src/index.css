@@ -2,12 +2,16 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
-@custom-variant dark (&:is(.dark *));
+/* .agents/ holds skill docs whose code samples contain literal Tailwind classes.
+   Without this exclusion Tailwind emits them as real utilities. */
+@source not "../.agents";
 
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
+    --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -24,6 +28,8 @@
     --color-ring: var(--ring);
     --color-input: var(--input);
     --color-border: var(--border);
+    --color-rule: var(--rule);
+    --color-rule-strong: var(--rule-strong);
     --color-destructive: var(--destructive);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
@@ -55,8 +61,8 @@
     --card-foreground: oklch(0.26 0.009 56);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.26 0.009 56);
-    --primary: oklch(0.646 0.222 41.116);
-    --primary-foreground: oklch(0.985 0.01 75);
+    --primary: oklch(0.53 0.16 30);
+    --primary-foreground: oklch(0.985 0.005 90);
     --secondary: oklch(0.962 0.007 72);
     --secondary-foreground: oklch(0.33 0.012 56);
     --muted: oklch(0.962 0.007 72);
@@ -66,8 +72,10 @@
     --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.91 0.008 65);
     --input: oklch(0.91 0.008 65);
-    --ring: oklch(0.705 0.213 47.604);
-    --chart-1: oklch(0.646 0.222 41.116);
+    --ring: oklch(0.53 0.16 30);
+    --rule: oklch(0.26 0.009 56 / 0.22);
+    --rule-strong: oklch(0.26 0.009 56 / 0.34);
+    --chart-1: oklch(0.53 0.16 30);
     --chart-2: oklch(0.627 0.194 149.214);
     --chart-3: oklch(0.666 0.179 58.318);
     --chart-4: oklch(0.553 0.146 46.416);
@@ -75,56 +83,75 @@
     --radius: 0.625rem;
     --sidebar: oklch(0.982 0.004 78);
     --sidebar-foreground: oklch(0.26 0.009 56);
-    --sidebar-primary: oklch(0.646 0.222 41.116);
+    --sidebar-primary: oklch(0.53 0.16 30);
     --sidebar-primary-foreground: oklch(0.985 0.01 75);
     --sidebar-accent: oklch(0.95 0.028 66);
     --sidebar-accent-foreground: oklch(0.42 0.13 44);
     --sidebar-border: oklch(0.91 0.008 65);
-    --sidebar-ring: oklch(0.705 0.213 47.604);
+    --sidebar-ring: oklch(0.53 0.16 30);
 }
 
-.dark {
-    --background: oklch(0.145 0.006 56);
-    --foreground: oklch(0.958 0.004 80);
-    --card: oklch(0.185 0.006 56);
-    --card-foreground: oklch(0.958 0.004 80);
-    --popover: oklch(0.185 0.006 56);
-    --popover-foreground: oklch(0.958 0.004 80);
-    --primary: oklch(0.705 0.213 47.604);
-    --primary-foreground: oklch(0.985 0.01 75);
-    --secondary: oklch(0.245 0.007 56);
-    --secondary-foreground: oklch(0.958 0.004 80);
-    --muted: oklch(0.23 0.007 56);
-    --muted-foreground: oklch(0.73 0.012 62);
-    --accent: oklch(0.28 0.025 50);
-    --accent-foreground: oklch(0.88 0.09 62);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.705 0.213 47.604);
-    --chart-1: oklch(0.705 0.213 47.604);
-    --chart-2: oklch(0.723 0.219 149.579);
-    --chart-3: oklch(0.737 0.175 61.207);
-    --chart-4: oklch(0.651 0.152 46.416);
-    --chart-5: oklch(0.83 0.176 74.924);
-    --sidebar: oklch(0.165 0.006 56);
-    --sidebar-foreground: oklch(0.958 0.004 80);
-    --sidebar-primary: oklch(0.705 0.213 47.604);
-    --sidebar-primary-foreground: oklch(0.985 0.01 75);
-    --sidebar-accent: oklch(0.28 0.025 50);
-    --sidebar-accent-foreground: oklch(0.88 0.09 62);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.705 0.213 47.604);
-}
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-color: var(--rule-strong) transparent;
     }
   body {
     @apply bg-background text-foreground;
     }
   html {
     @apply font-sans;
+    caret-color: var(--primary);
     }
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    }
+  a, button {
+    text-underline-offset: 0.2em;
+    }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    }
+}
+
+@utility rule-draw {
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--rule-delay, 0ms);
+
+  &[data-drawn='pending'] {
+    transform: scaleX(0);
+  }
+
+  &[data-drawn='done'] {
+    transform: scaleX(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transform: none;
+    transition: none;
+  }
+}
+
+@keyframes rule-write-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@utility rule-draw-y {
+  transform-origin: top center;
+  animation: rule-write-y 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: none;
+  }
 }

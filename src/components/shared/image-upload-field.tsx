@@ -102,7 +102,7 @@ export function ImageUploadField({
 
       <div
         className={cn(
-          'grid aspect-[16/9] w-full place-items-center overflow-hidden rounded-lg border border-dashed bg-muted/40 sm:aspect-[2/1]',
+          'grid aspect-[16/9] w-full place-items-center overflow-hidden rounded-[2px] border border-dashed border-rule bg-muted/40 sm:aspect-[2/1]',
           shownError && 'border-destructive',
         )}
       >
