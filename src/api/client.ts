@@ -20,6 +20,17 @@ export type ApiError = Error & {
   fieldErrors: Record<string, string[]>
 }
 
+function fallbackMessage(status: number): string {
+  if (status === 0) return 'Tidak dapat terhubung ke server. Periksa koneksi Anda.'
+  if (status === 401) return 'Sesi Anda sudah berakhir. Silakan masuk kembali.'
+  if (status === 403) return 'Anda tidak punya akses ke bagian ini.'
+  if (status === 404) return 'Data yang Anda cari tidak tersedia.'
+  if (status === 422) return 'Periksa kembali data yang Anda isi.'
+  if (status === 429) return 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.'
+  if (status >= 500) return 'Server sedang bermasalah. Coba lagi beberapa saat lagi.'
+  return 'Terjadi kesalahan tak terduga. Coba lagi.'
+}
+
 export function toApiError(error: unknown): ApiError {
   const apiError = new Error('Terjadi kesalahan tak terduga.') as ApiError
   apiError.status = 0
@@ -32,15 +43,15 @@ export function toApiError(error: unknown): ApiError {
       | undefined
 
     apiError.status = status
-    apiError.message =
-      (status === 0 ? 'Tidak dapat terhubung ke server. Periksa koneksi Anda.' : undefined) ??
-      payload?.message ??
-      error.message
+    // The server's own message wins; otherwise a readable Indonesian fallback by
+    // status class. Never axios.message, which leaks English transport text.
+    const serverMessage = payload?.message?.trim()
+    apiError.message = serverMessage || fallbackMessage(status)
     apiError.fieldErrors = payload?.errors ?? {}
     return apiError
   }
 
-  if (error instanceof Error) {
+  if (error instanceof Error && error.message) {
     apiError.message = error.message
   }
   return apiError
